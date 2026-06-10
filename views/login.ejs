@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вход в админку</title>
+  <link rel="stylesheet" href="/public/css/style.css">
+</head>
+<body class="admin-body login-body">
+  <form class="login-card" method="post" action="/admin/login">
+    <div class="eyebrow">ADMIN</div>
+    <h1>Вход в меню</h1>
+    <% if (flash.error) { %><div class="alert error"><%= flash.error[0] %></div><% } %>
+    <label>Логин <input name="username" required autocomplete="username"></label>
+    <label>Пароль <input name="password" type="password" required autocomplete="current-password"></label>
+    <button class="btn primary">Войти</button>
+  </form>
+</body>
+</html>

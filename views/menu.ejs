@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title><%= settings.restaurant_name %> — меню</title>
+  <link rel="stylesheet" href="/public/css/style.css">
+  <style>
+    :root {
+      --theme: <%= settings.theme_color || '#111111' %>;
+      --accent: <%= settings.accent_color || '#ff9f2d' %>;
+    }
+  </style>
+</head>
+<body class="menu-body">
+  <header class="hero" style="<%= settings.cover_image ? `background-image: linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.62)), url('${settings.cover_image}')` : '' %>">
+    <div class="hero-inner">
+      <div class="eyebrow">QR MENU</div>
+      <h1><%= settings.restaurant_name %></h1>
+      <p><%= settings.restaurant_subtitle %></p>
+    </div>
+  </header>
+
+  <nav class="category-tabs" id="categoryTabs" aria-label="Разделы меню">
+    <% categories.forEach((cat, index) => { %>
+      <% if (cat.items.length) { %>
+        <a href="#cat-<%= cat.id %>" class="tab <%= index === 0 ? 'active' : '' %>"><%= cat.title %></a>
+      <% } %>
+    <% }) %>
+  </nav>
+
+  <main class="menu-wrap">
+    <% categories.forEach(cat => { if (cat.items.length) { %>
+      <section class="category-section" id="cat-<%= cat.id %>">
+        <div class="section-head">
+          <h2><%= cat.title %></h2>
+          <% if (cat.description) { %><p><%= cat.description %></p><% } %>
+        </div>
+
+        <div class="cards-grid">
+          <% cat.items.forEach(item => { %>
+            <article class="menu-card">
+              <div class="card-content">
+                <div class="card-top">
+                  <h3><%= item.title %></h3>
+                  <div class="price-block desktop-price">
+                    <% if (item.old_price) { %><span class="old-price"><%= item.old_price %> <%= settings.currency %></span><% } %>
+                    <strong><%= item.price %> <%= settings.currency %></strong>
+                  </div>
+                </div>
+
+                <div class="price-block mobile-price">
+                  <% if (item.old_price) { %><span class="old-price"><%= item.old_price %> <%= settings.currency %></span><% } %>
+                  <strong><%= item.price %> <%= settings.currency %></strong>
+                </div>
+
+                <% if (item.description) { %>
+                <p class="desc">
+                  <span class="desc-text"><%= item.description %></span>
+                  <button class="desc-more" type="button">Показать</button>
+                </p>
+              <% } %>
+
+                <div class="meta-row">
+                  <% if (item.weight) { %><span><%= item.weight %></span><% } %>
+                  <% if (item.is_popular) { %><span class="pill accent">Популярное</span><% } %>
+                  <% if (item.is_new) { %><span class="pill new-pill">Новое</span><% } %>
+                  <% if (item.badges) { item.badges.split(',').map(b => b.trim()).filter(Boolean).forEach(b => { %>
+                    <span class="pill"><%= b %></span>
+                  <% }) } %>
+                </div>
+                <% if (item.allergens) { %><div class="allergens">Аллергены: <%= item.allergens %></div><% } %>
+              </div>
+
+              <% if (item.image) { %>
+                <img class="dish-image" src="<%= item.image %>" alt="<%= item.title %>" loading="lazy">
+              <% } else { %>
+                <div class="image-placeholder dish-image">🍽️</div>
+              <% } %>
+            </article>
+          <% }) %>
+        </div>
+      </section>
+    <% } }) %>
+  </main>
+
+  <footer class="footer">Меню обновляется администрацией ресторана</footer>
+  <script src="/public/js/menu.js"></script>
+</body>
+</html>
