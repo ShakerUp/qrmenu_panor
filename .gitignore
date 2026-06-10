@@ -3,3 +3,5 @@ node_modules
 menu.db
 public/uploads/*
 !public/uploads/.gitkeep
+menu.db-shm
+menu.db-wal
