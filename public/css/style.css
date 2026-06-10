@@ -607,10 +607,10 @@ select:focus {
   .menu-card {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 108px;
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) 126px;
+    gap: 14px;
     min-height: 0;
-    padding: 12px 0 13px;
+    padding: 12px 8px 13px 0;
     background: transparent;
     border: 0;
     border-radius: 0;
@@ -714,9 +714,9 @@ select:focus {
   .dish-image,
   .image-placeholder {
     align-self: start;
-    width: 125px;
-    min-width: 125px;
-    height: 92px;
+    width: 126px;
+    min-width: 126px;
+    height: 108px;
     border-radius: 8px;
     object-fit: cover;
     background: #1a1a1b;
@@ -773,16 +773,16 @@ select:focus {
   }
 
   .menu-card {
-    grid-template-columns: minmax(0, 1fr) 96px;
-    gap: 10px;
-    padding: 11px 0 12px;
+    grid-template-columns: minmax(0, 1fr) 112px;
+    gap: 12px;
+    padding: 11px 8px 12px 0;
   }
 
   .dish-image,
   .image-placeholder {
-    width: 96px;
-    min-width: 96px;
-    height: 86px;
+    width: 112px;
+    min-width: 112px;
+    height: 98px;
   }
 
   .card-top h3 {

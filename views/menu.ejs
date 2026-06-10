@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title><%= settings.restaurant_name %> — меню</title>
-  <link rel="stylesheet" href="/public/css/style.css?v=999">
+  <link rel="stylesheet" href="/public/css/style.css?v=<%= Date.now() %>">
   <style>
     :root {
       --theme: <%= settings.theme_color || '#111111' %>;
