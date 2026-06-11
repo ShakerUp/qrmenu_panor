@@ -65,7 +65,7 @@
                     <% } %>
 
                     <% if (item.image) { %>
-                      <img src="<%= item.image %>" alt="<%= item.title %>" loading="lazy">
+                      <img src="<%= item.image %>" alt="<%= item.title %>" loading="lazy" decoding="async">
                     <% } else { %>
                       <div class="classic-placeholder">🍽️</div>
                     <% } %>

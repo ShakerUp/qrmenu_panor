@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const sharp = require('sharp');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const db = require('./db');
@@ -74,7 +75,7 @@ app.use(express.json());
 app.use(
   '/public',
   express.static(path.join(__dirname, 'public'), {
-    maxAge: '7d',
+    maxAge: '30d',
     immutable: false,
   }),
 );
@@ -129,6 +130,24 @@ app.get('/', (req, res) => {
   res.render('menu-classic', { settings: s, categories: grouped });
 });
 
+async function optimizeImage(file) {
+  if (!file) return '';
+
+  const inputPath = file.path;
+  const outputName = `${path.parse(file.filename).name}.webp`;
+  const outputPath = path.join(uploadDir, outputName);
+
+  await sharp(inputPath)
+    .rotate()
+    .resize({ width: 900, withoutEnlargement: true })
+    .webp({ quality: 75 })
+    .toFile(outputPath);
+
+  fs.unlinkSync(inputPath);
+
+  return `/public/uploads/${outputName}`;
+}
+
 app.get('/admin/login', (req, res) => {
   res.render('login');
 });
@@ -172,7 +191,7 @@ app.get('/admin', (req, res) => {
   res.render('admin', { settings: s, categories, items });
 });
 
-app.post('/admin/settings', upload.single('cover_image'), (req, res) => {
+app.post('/admin/settings', upload.single('cover_image'), async (req, res) => {
   const allowed = [
     'restaurant_name',
     'restaurant_subtitle',
@@ -190,7 +209,8 @@ app.post('/admin/settings', upload.single('cover_image'), (req, res) => {
   allowed.forEach((k) => stmt.run(k, req.body[k] || ''));
 
   if (req.file) {
-    stmt.run('cover_image', `/public/uploads/${req.file.filename}`);
+    const coverImage = await optimizeImage(req.file);
+    stmt.run('cover_image', coverImage);
   }
 
   req.flash('success', 'Настройки сохранены');
@@ -233,8 +253,8 @@ app.post('/admin/categories/:id/delete', (req, res) => {
   res.redirect('/admin');
 });
 
-app.post('/admin/items', upload.single('image'), (req, res) => {
-  const image = req.file ? `/public/uploads/${req.file.filename}` : '';
+app.post('/admin/items', upload.single('image'), async (req, res) => {
+  const image = req.file ? await optimizeImage(req.file) : '';
 
   const {
     category_id,

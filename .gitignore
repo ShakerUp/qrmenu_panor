@@ -1,7 +1,9 @@
-node_modules
+node_modules/
 .env
+
 menu.db
-public/uploads/*
-!public/uploads/.gitkeep
 menu.db-shm
 menu.db-wal
+
+public/uploads/*
+!public/uploads/.gitkeep
