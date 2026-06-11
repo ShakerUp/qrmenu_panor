@@ -184,11 +184,25 @@ app.get('/admin', (req, res) => {
       FROM items
       LEFT JOIN categories ON categories.id = items.category_id
       ORDER BY categories.position, items.position, items.id
-    `,
+  `,
     )
     .all();
 
-  res.render('admin', { settings: s, categories, items });
+  const currentTab = req.query.tab || 'dashboard';
+
+  let editItem = null;
+
+  if (currentTab === 'edit-item' && req.query.id) {
+    editItem = db.prepare('SELECT * FROM items WHERE id = ?').get(req.query.id);
+  }
+
+  res.render('admin_v2', {
+    settings: s,
+    categories,
+    items,
+    currentTab,
+    editItem,
+  });
 });
 
 app.post('/admin/settings', upload.single('cover_image'), async (req, res) => {
