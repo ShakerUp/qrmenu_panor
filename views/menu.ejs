@@ -54,6 +54,20 @@
                   <strong><%= item.price %> <%= settings.currency %></strong>
                 </div>
 
+                <% if (item.promo_text) { %>
+                  <div class="promo-offer promo-<%= item.promo_type || 'gift' %>">
+                    <span class="promo-label">
+                      <%= item.promo_label || 'АКЦИЯ' %>
+                    </span>
+                    <span class="promo-text">
+                      <% if ((item.promo_type || 'gift') === 'gift') { %>🎁<% } %>
+                      <% if (item.promo_type === 'discount') { %>💸<% } %>
+                      <% if (item.promo_type === 'hot') { %>🔥<% } %>
+                      <%= item.promo_text %>
+                    </span>
+                  </div>
+                <% } %>
+                
                 <% if (item.description) { %>
                 <p class="desc">
                   <span class="desc-text"><%= item.description %></span>

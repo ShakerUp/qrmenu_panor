@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Админка меню</title>
-  <link rel="stylesheet" href="/public/css/style.css">
+  <link rel="stylesheet" href="/public/css/style.css?v=<%= Date.now() %>">
 </head>
 <body class="admin-body">
   <header class="admin-topbar">
@@ -17,6 +17,7 @@
 
   <main class="admin-wrap">
     <% if (flash.success) { %><div class="alert success"><%= flash.success[0] %></div><% } %>
+    <% if (flash.error) { %><div class="alert error"><%= flash.error[0] %></div><% } %>
 
     <section class="panel">
       <h2>Настройки ресторана</h2>
@@ -26,17 +27,17 @@
         <label>Валюта <input name="currency" value="<%= settings.currency %>" required></label>
         <label>Основной цвет <input type="color" name="theme_color" value="<%= settings.theme_color %>"></label>
         <label>Акцент <input type="color" name="accent_color" value="<%= settings.accent_color %>"></label>
+
         <label class="wide">
           Обложка
-
           <% if (settings.cover_image) { %>
             <div class="admin-preview">
               <img src="<%= settings.cover_image %>?v=<%= Date.now() %>" alt="Обложка ресторана">
             </div>
           <% } %>
-
           <input type="file" name="cover_image" accept="image/*">
         </label>
+
         <button class="btn primary">Сохранить настройки</button>
       </form>
     </section>
@@ -71,19 +72,39 @@
     <section class="panel">
       <h2>Добавить позицию</h2>
       <form class="admin-form grid-form" method="post" action="/admin/items" enctype="multipart/form-data">
-        <label>Раздел <select name="category_id" required><% categories.forEach(cat => { %><option value="<%= cat.id %>"><%= cat.title %></option><% }) %></select></label>
+        <label>Раздел
+          <select name="category_id" required>
+            <% categories.forEach(cat => { %>
+              <option value="<%= cat.id %>"><%= cat.title %></option>
+            <% }) %>
+          </select>
+        </label>
+
         <label>Название <input name="title" required></label>
         <label>Цена <input name="price" type="number" step="0.01" required></label>
         <label>Старая цена <input name="old_price" type="number" step="0.01"></label>
+
+        <label>Промо-лейбл <input name="promo_label" placeholder="АКЦИЯ / ПОДАРОК / ВЫГОДА"></label>
+        <label>Текст акции <input name="promo_text" placeholder="Бесплатное пиво / Cola в подарок"></label>
+        <label>Тип акции
+          <select name="promo_type">
+            <option value="gift">Подарок</option>
+            <option value="discount">Скидка</option>
+            <option value="hot">Хит акция</option>
+          </select>
+        </label>
+
         <label>Вес/объем <input name="weight" placeholder="250 г / 350 мл"></label>
         <label>Позиция <input name="position" type="number" value="0"></label>
         <label class="wide">Описание <textarea name="description" rows="3"></textarea></label>
         <label>Бейджи <input name="badges" placeholder="vegan, spicy, chef"></label>
         <label>Аллергены <input name="allergens" placeholder="глютен, молоко"></label>
         <label>Фото <input type="file" name="image" accept="image/*"></label>
+
         <label class="check"><input type="checkbox" name="is_popular"> Популярное</label>
         <label class="check"><input type="checkbox" name="is_new"> Новинка</label>
         <label class="check"><input type="checkbox" name="is_active" checked> Показывать</label>
+
         <button class="btn primary">Добавить позицию</button>
       </form>
     </section>
@@ -100,21 +121,42 @@
                 🍽️
               <% } %>
             </div>
+
             <div class="edit-grid">
-              <label>Раздел <select name="category_id"><% categories.forEach(cat => { %><option value="<%= cat.id %>" <%= cat.id === item.category_id ? 'selected' : '' %>><%= cat.title %></option><% }) %></select></label>
+              <label>Раздел
+                <select name="category_id">
+                  <% categories.forEach(cat => { %>
+                    <option value="<%= cat.id %>" <%= cat.id === item.category_id ? 'selected' : '' %>><%= cat.title %></option>
+                  <% }) %>
+                </select>
+              </label>
+
               <label>Название <input name="title" value="<%= item.title %>" required></label>
               <label>Цена <input name="price" type="number" step="0.01" value="<%= item.price %>" required></label>
               <label>Старая цена <input name="old_price" type="number" step="0.01" value="<%= item.old_price || '' %>"></label>
+
+              <label>Промо-лейбл <input name="promo_label" value="<%= item.promo_label || '' %>" placeholder="АКЦИЯ / ПОДАРОК / ВЫГОДА"></label>
+              <label>Текст акции <input name="promo_text" value="<%= item.promo_text || '' %>" placeholder="Бесплатное пиво / Cola в подарок"></label>
+              <label>Тип акции
+                <select name="promo_type">
+                  <option value="gift" <%= item.promo_type === 'gift' ? 'selected' : '' %>>Подарок</option>
+                  <option value="discount" <%= item.promo_type === 'discount' ? 'selected' : '' %>>Скидка</option>
+                  <option value="hot" <%= item.promo_type === 'hot' ? 'selected' : '' %>>Хит акция</option>
+                </select>
+              </label>
+
               <label>Вес <input name="weight" value="<%= item.weight %>"></label>
               <label>Позиция <input name="position" type="number" value="<%= item.position %>"></label>
               <label class="wide">Описание <textarea name="description"><%= item.description %></textarea></label>
               <label>Бейджи <input name="badges" value="<%= item.badges %>"></label>
               <label>Аллергены <input name="allergens" value="<%= item.allergens %>"></label>
               <label>Новое фото <input type="file" name="image" accept="image/*"></label>
+
               <label class="check"><input type="checkbox" name="is_popular" <%= item.is_popular ? 'checked' : '' %>> Популярное</label>
               <label class="check"><input type="checkbox" name="is_new" <%= item.is_new ? 'checked' : '' %>> Новинка</label>
               <label class="check"><input type="checkbox" name="is_active" <%= item.is_active ? 'checked' : '' %>> Показывать</label>
             </div>
+
             <div class="card-actions">
               <button class="btn">Сохранить</button>
               <button class="btn danger" formaction="/admin/items/<%= item.id %>/delete" onclick="return confirm('Удалить позицию?')">Удалить</button>

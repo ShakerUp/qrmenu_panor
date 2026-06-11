@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title><%= settings.restaurant_name %> — меню</title>
+
+  <link rel="stylesheet" href="/public/css/style-classic.css?v=<%= Date.now() %>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root {
+      --accent: <%= settings.accent_color || '#b89b5e' %>;
+    }
+  </style>
+</head>
+
+<body class="classic-body">
+  <div class="classic-page">
+
+    <header class="classic-hero">
+      <div class="classic-logo">
+        <%= settings.restaurant_name || 'LE CAFÉ' %>
+      </div>
+
+      <div class="classic-subtitle">
+        <span></span>
+        QR меню
+        <span></span>
+      </div>
+    </header>
+
+    <nav class="classic-tabs" id="categoryTabs" aria-label="Разделы меню">
+      <% categories.forEach((cat, index) => { %>
+        <% if (cat.items.length) { %>
+          <a href="#cat-<%= cat.id %>" class="classic-tab <%= index === 0 ? 'active' : '' %>">
+            <%= cat.title %>
+          </a>
+        <% } %>
+      <% }) %>
+    </nav>
+
+    <main class="classic-wrap">
+      <% categories.forEach(cat => { if (cat.items.length) { %>
+        <section class="classic-section" id="cat-<%= cat.id %>">
+          <div class="classic-section-head">
+            <h2><%= cat.title %></h2>
+            <% if (cat.description) { %>
+              <p><%= cat.description %></p>
+            <% } %>
+          </div>
+
+          <div class="classic-list">
+            <% cat.items.forEach(item => { %>
+              <article class="classic-card">
+                <div class="classic-image <%= item.promo_text ? 'has-promo' : '' %>">
+                    <% if (item.promo_text) { %>
+                      <div class="promo-ribbon">АКЦІЯ</div>
+                    <% } %>
+
+                    <% if (item.image) { %>
+                      <img src="<%= item.image %>" alt="<%= item.title %>" loading="lazy">
+                    <% } else { %>
+                      <div class="classic-placeholder">🍽️</div>
+                    <% } %>
+
+                    <% if (item.promo_text) { %>
+                      <div class="photo-gift-badge">
+                        <span>🎁</span>
+                        <strong><%= item.promo_text %></strong>
+                      </div>
+                    <% } %>
+                  </div>
+
+                <div class="classic-content">
+                  <div class="classic-badges">
+                    <% if (item.is_popular) { %>
+                      <span class="classic-badge green">Популярное</span>
+                    <% } %>
+
+                    <% if (item.is_new) { %>
+                      <span class="classic-badge red">New</span>
+                    <% } %>
+
+                    <% if (item.promo_text) { %>
+                      <span class="classic-badge gold">
+                        <% if ((item.promo_type || 'gift') === 'gift') { %>🎁<% } %>
+                        <% if (item.promo_type === 'discount') { %>💸<% } %>
+                        <% if (item.promo_type === 'hot') { %>🔥<% } %>
+                        <%= item.promo_text %>
+                      </span>
+                    <% } %>
+
+                    <% if (item.badges) { item.badges.split(',').map(b => b.trim()).filter(Boolean).forEach(b => { %>
+                      <span class="classic-badge muted"><%= b %></span>
+                    <% }) } %>
+                  </div>
+
+                  <h3><%= item.title %></h3>
+
+                  <% if (item.description) { %>
+                    <p class="classic-desc"><%= item.description %></p>
+                  <% } %>
+
+                  <% if (item.weight) { %>
+                    <div class="classic-weight"><%= item.weight %></div>
+                  <% } %>
+
+                  <div class="classic-price-row">
+                    <% if (item.old_price) { %>
+                      <span class="classic-old-price"><%= item.old_price %> <%= settings.currency %></span>
+                    <% } %>
+
+                    <strong class="classic-price"><%= item.price %> <%= settings.currency %></strong>
+                  </div>
+                  <% if (item.old_price && Number(item.old_price) > Number(item.price)) { %>
+                    <div class="saving-badge">
+                      🏷️ Економія <%= Math.round(Number(item.old_price) - Number(item.price)) %> <%= settings.currency %>
+                    </div>
+                  <% } %>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        </section>
+      <% } }) %>
+    </main>
+
+    <footer class="classic-footer">
+      Смачно. Свіжо. По-справжньому.
+    </footer>
+  </div>
+
+  <script src="/public/js/menu-classic.js"></script>
+</body>
+</html>

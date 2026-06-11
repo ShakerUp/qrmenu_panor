@@ -126,7 +126,7 @@ app.get('/', (req, res) => {
     items: items.filter((i) => i.category_id === c.id),
   }));
 
-  res.render('menu', { settings: s, categories: grouped });
+  res.render('menu-classic', { settings: s, categories: grouped });
 });
 
 app.get('/admin/login', (req, res) => {
@@ -249,6 +249,9 @@ app.post('/admin/items', upload.single('image'), (req, res) => {
     is_new,
     is_active,
     position,
+    promo_label,
+    promo_text,
+    promo_type,
   } = req.body;
 
   db.prepare(
@@ -264,12 +267,15 @@ app.post('/admin/items', upload.single('image'), (req, res) => {
       image,
       badges,
       allergens,
+      promo_label,
+      promo_text,
+      promo_type,
       is_popular,
       is_new,
       is_active,
       position
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
   ).run(
     category_id,
@@ -281,6 +287,9 @@ app.post('/admin/items', upload.single('image'), (req, res) => {
     image,
     badges || '',
     allergens || '',
+    promo_label || '',
+    promo_text || '',
+    promo_type || 'gift',
     is_popular ? 1 : 0,
     is_new ? 1 : 0,
     is_active ? 1 : 0,
@@ -308,6 +317,9 @@ app.post('/admin/items/:id', upload.single('image'), (req, res) => {
     is_new,
     is_active,
     position,
+    promo_label,
+    promo_text,
+    promo_type,
   } = req.body;
 
   db.prepare(
@@ -323,6 +335,9 @@ app.post('/admin/items/:id', upload.single('image'), (req, res) => {
       image = ?,
       badges = ?,
       allergens = ?,
+      promo_label = ?,
+      promo_text = ?,
+      promo_type = ?,
       is_popular = ?,
       is_new = ?,
       is_active = ?,
@@ -339,6 +354,9 @@ app.post('/admin/items/:id', upload.single('image'), (req, res) => {
     image,
     badges || '',
     allergens || '',
+    promo_label || '',
+    promo_text || '',
+    promo_type || 'gift',
     is_popular ? 1 : 0,
     is_new ? 1 : 0,
     is_active ? 1 : 0,

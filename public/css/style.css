@@ -798,3 +798,68 @@ select:focus {
     font-size: 12px;
   }
 }
+
+.promo-offer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 9px;
+}
+
+.promo-label {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff2f4b, #ff7a18);
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 14px rgba(255, 47, 75, 0.35);
+}
+
+.promo-text {
+  color: #ffcc4d;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 900;
+}
+
+.promo-discount .promo-label {
+  background: linear-gradient(135deg, #ff3b30, #ff9500);
+}
+
+.promo-hot .promo-label {
+  background: linear-gradient(135deg, #ff004c, #ff7a00);
+  animation: promoPulse 1.7s ease-in-out infinite;
+}
+
+@keyframes promoPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 14px rgba(255, 47, 75, 0.35);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 6px 20px rgba(255, 47, 75, 0.55);
+  }
+}
+
+@media (max-width: 560px) {
+  .promo-offer {
+    gap: 5px;
+    margin: 0 0 7px;
+  }
+
+  .promo-label {
+    padding: 3px 7px;
+    font-size: 9.5px;
+  }
+
+  .promo-text {
+    font-size: 12px;
+  }
+}

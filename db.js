@@ -38,6 +38,9 @@ CREATE TABLE IF NOT EXISTS items (
   image TEXT DEFAULT '',
   badges TEXT DEFAULT '',
   allergens TEXT DEFAULT '',
+  promo_label TEXT DEFAULT '',
+  promo_text TEXT DEFAULT '',
+  promo_type TEXT DEFAULT 'gift',
   is_popular INTEGER DEFAULT 0,
   is_new INTEGER DEFAULT 0,
   is_active INTEGER DEFAULT 1,
@@ -46,6 +49,19 @@ CREATE TABLE IF NOT EXISTS items (
   FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE
 );
 `);
+
+function addColumnIfNotExists(table, column, definition) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+  const exists = columns.some((c) => c.name === column);
+
+  if (!exists) {
+    db.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`).run();
+  }
+}
+
+addColumnIfNotExists('items', 'promo_label', "TEXT DEFAULT ''");
+addColumnIfNotExists('items', 'promo_text', "TEXT DEFAULT ''");
+addColumnIfNotExists('items', 'promo_type', "TEXT DEFAULT 'gift'");
 
 function setDefault(key, value) {
   const exists = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
@@ -63,8 +79,10 @@ const adminUsername = process.env.ADMIN_USERNAME || 'admin';
 const adminPassword = process.env.ADMIN_PASSWORD || 'change_me_123';
 const admin = db.prepare('SELECT id FROM admins WHERE username = ?').get(adminUsername);
 if (!admin) {
-  db.prepare('INSERT INTO admins (username, password_hash) VALUES (?, ?)')
-    .run(adminUsername, bcrypt.hashSync(adminPassword, 10));
+  db.prepare('INSERT INTO admins (username, password_hash) VALUES (?, ?)').run(
+    adminUsername,
+    bcrypt.hashSync(adminPassword, 10),
+  );
 }
 
 const countCategories = db.prepare('SELECT COUNT(*) as count FROM categories').get().count;
@@ -78,11 +96,61 @@ if (countCategories === 0) {
   const mains = cat.run('Основные блюда', 'Фирменные позиции ресторана', 2).lastInsertRowid;
   const drinks = cat.run('Напитки', 'Кофе, чай, лимонады и коктейли', 3).lastInsertRowid;
 
-  item.run(starters, 'Брускетта с томатами', 'Хрустящий хлеб, томаты, базилик, оливковое масло', 180, '180 г', 'vegan', 1, 0, 1);
-  item.run(starters, 'Сырная тарелка', 'Ассорти сыров, мед, орехи, виноград', 390, '250 г', '', 0, 1, 2);
-  item.run(mains, 'Стейк из говядины', 'Сочный стейк с соусом демиглас и овощами гриль', 690, '320 г', 'chef', 1, 0, 1);
-  item.run(mains, 'Паста с морепродуктами', 'Паста, креветки, мидии, сливочный соус', 420, '300 г', '', 0, 0, 2);
-  item.run(drinks, 'Домашний лимонад', 'Лимон, мята, содовая, лед', 120, '350 мл', 'fresh', 1, 0, 1);
+  item.run(
+    starters,
+    'Брускетта с томатами',
+    'Хрустящий хлеб, томаты, базилик, оливковое масло',
+    180,
+    '180 г',
+    'vegan',
+    1,
+    0,
+    1,
+  );
+  item.run(
+    starters,
+    'Сырная тарелка',
+    'Ассорти сыров, мед, орехи, виноград',
+    390,
+    '250 г',
+    '',
+    0,
+    1,
+    2,
+  );
+  item.run(
+    mains,
+    'Стейк из говядины',
+    'Сочный стейк с соусом демиглас и овощами гриль',
+    690,
+    '320 г',
+    'chef',
+    1,
+    0,
+    1,
+  );
+  item.run(
+    mains,
+    'Паста с морепродуктами',
+    'Паста, креветки, мидии, сливочный соус',
+    420,
+    '300 г',
+    '',
+    0,
+    0,
+    2,
+  );
+  item.run(
+    drinks,
+    'Домашний лимонад',
+    'Лимон, мята, содовая, лед',
+    120,
+    '350 мл',
+    'fresh',
+    1,
+    0,
+    1,
+  );
 }
 
 module.exports = db;
