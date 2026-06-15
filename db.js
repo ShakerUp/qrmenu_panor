@@ -63,6 +63,7 @@ addColumnIfNotExists('items', 'promo_label', "TEXT DEFAULT ''");
 addColumnIfNotExists('items', 'promo_text', "TEXT DEFAULT ''");
 addColumnIfNotExists('items', 'promo_type', "TEXT DEFAULT 'gift'");
 addColumnIfNotExists('items', 'subtitle_group', "TEXT DEFAULT ''");
+addColumnIfNotExists('items', 'subtitle_group_position', 'INTEGER DEFAULT 0');
 
 function setDefault(key, value) {
   const exists = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);

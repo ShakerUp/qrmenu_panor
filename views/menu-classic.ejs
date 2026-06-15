@@ -63,7 +63,13 @@
             });
             /* Схлопываем одиночные (без группы) в один блок в начале */
             const singles = grouped.filter(g => g._single).map(g => g.items[0]);
-            const groups  = grouped.filter(g => !g._single);
+            const groups  = grouped
+              .filter(g => !g._single)
+              .sort((a, b) => {
+                const posA = Math.min(...a.items.map(i => Number(i.subtitle_group_position || 0)));
+                const posB = Math.min(...b.items.map(i => Number(i.subtitle_group_position || 0)));
+                return posA - posB;
+              });
           %>
 
           <% if (singles.length) { %>

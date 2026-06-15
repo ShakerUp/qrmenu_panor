@@ -279,6 +279,7 @@ app.post('/admin/items', upload.single('image'), async (req, res) => {
     promo_text,
     promo_type,
     subtitle_group,
+    subtitle_group_position,
   } = req.body;
 
   db.prepare(
@@ -286,7 +287,7 @@ app.post('/admin/items', upload.single('image'), async (req, res) => {
     INSERT INTO items
     (category_id, title, description, price, old_price, weight, image,
      badges, allergens, promo_label, promo_text, promo_type,
-     is_popular, is_new, is_active, position, subtitle_group)
+     is_popular, is_new, is_active, position, subtitle_group, subtitle_group_position)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
   ).run(
@@ -306,7 +307,8 @@ app.post('/admin/items', upload.single('image'), async (req, res) => {
     is_new ? 1 : 0,
     is_active ? 1 : 0,
     Number(position || 0),
-    subtitle_group || '', // ← добавлено
+    subtitle_group || '',
+    Number(subtitle_group_position || 0), // ← добавлено
   );
 
   req.flash('success', 'Позиция добавлена');
@@ -333,7 +335,8 @@ app.post('/admin/items/:id', upload.single('image'), async (req, res) => {
     promo_label,
     promo_text,
     promo_type,
-    subtitle_group, // ← добавлено
+    subtitle_group,
+    subtitle_group_position, // ← добавлено
   } = req.body;
 
   db.prepare(
@@ -343,7 +346,7 @@ app.post('/admin/items/:id', upload.single('image'), async (req, res) => {
       old_price = ?, weight = ?, image = ?, badges = ?, allergens = ?,
       promo_label = ?, promo_text = ?, promo_type = ?,
       is_popular = ?, is_new = ?, is_active = ?, position = ?,
-      subtitle_group = ?   -- ← добавлено
+      subtitle_group = ?, subtitle_group_position = ? 
     WHERE id = ?
   `,
   ).run(
@@ -363,7 +366,8 @@ app.post('/admin/items/:id', upload.single('image'), async (req, res) => {
     is_new ? 1 : 0,
     is_active ? 1 : 0,
     Number(position || 0),
-    subtitle_group || '', // ← добавлено
+    subtitle_group || '',
+    Number(subtitle_group_position || 0), // ← добавлено
     req.params.id,
   );
 

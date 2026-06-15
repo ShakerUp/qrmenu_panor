@@ -394,6 +394,11 @@
                 <input class="form-input" name="subtitle_group" placeholder="Классические роли / Запечённые / Горячие">
                 <span class="form-hint">Позиции с одинаковым подразделом будут сгруппированы внутри раздела</span>
               </div>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Порядок подраздела</label>
+                <input class="form-input" name="subtitle_group_position" type="number" value="0">
+                <span class="form-hint">Чем меньше — тем выше подраздел</span>
+              </div>
               <div class="form-group">
                 <label class="form-label">Бейджи</label>
                 <input class="form-input" name="badges" placeholder="vegan, spicy, chef">
@@ -498,6 +503,11 @@
                 <label class="form-label">Подраздел (группа)</label>
                 <input class="form-input" name="subtitle_group" value="<%= editItem.subtitle_group || '' %>" placeholder="Классические роли / Запечённые / Горячие">
                 <span class="form-hint">Позиции с одинаковым подразделом будут сгруппированы внутри раздела</span>
+              </div>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Порядок подраздела</label>
+                <input class="form-input" name="subtitle_group_position" type="number" value="<%= editItem.subtitle_group_position || 0 %>">
+                <span class="form-hint">Чем меньше — тем выше подраздел</span>
               </div>
               <div class="form-group">
                 <label class="form-label">Бейджи</label>
