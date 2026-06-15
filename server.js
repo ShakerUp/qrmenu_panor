@@ -288,7 +288,7 @@ app.post('/admin/items', upload.single('image'), async (req, res) => {
     (category_id, title, description, price, old_price, weight, image,
      badges, allergens, promo_label, promo_text, promo_type,
      is_popular, is_new, is_active, position, subtitle_group, subtitle_group_position)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
   ).run(
     category_id,
