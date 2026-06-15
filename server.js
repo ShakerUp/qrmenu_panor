@@ -121,13 +121,14 @@ app.get('/', (req, res) => {
     .all();
 
   const items = db.prepare('SELECT * FROM items WHERE is_active = 1 ORDER BY position, id').all();
+  const subgroups = db.prepare('SELECT * FROM subgroups ORDER BY position, id').all(); // <- добавить
 
   const grouped = categories.map((c) => ({
     ...c,
     items: items.filter((i) => i.category_id === c.id),
   }));
 
-  res.render('menu-classic', { settings: s, categories: grouped });
+  res.render('menu-classic', { settings: s, categories: grouped, subgroups });
 });
 
 async function optimizeImage(file) {
@@ -177,6 +178,7 @@ app.get('/admin', (req, res) => {
   const tab = req.query.tab || 'dashboard';
 
   const categories = db.prepare('SELECT * FROM categories ORDER BY position, id').all();
+  const subgroups = db.prepare('SELECT * FROM subgroups ORDER BY category_id, position, id').all();
 
   const items = db
     .prepare(
@@ -194,7 +196,7 @@ app.get('/admin', (req, res) => {
     editItem = db.prepare('SELECT * FROM items WHERE id = ?').get(req.query.id);
   }
 
-  res.render('admin', { settings: s, categories, items, currentTab: tab, editItem });
+  res.render('admin', { settings: s, categories, subgroups, items, currentTab: tab, editItem });
 });
 
 app.post('/admin/settings', upload.single('cover_image'), async (req, res) => {
@@ -287,7 +289,7 @@ app.post('/admin/items', upload.single('image'), async (req, res) => {
     INSERT INTO items
     (category_id, title, description, price, old_price, weight, image,
      badges, allergens, promo_label, promo_text, promo_type,
-     is_popular, is_new, is_active, position, subtitle_group, subtitle_group_position)
+     is_popular, is_new, is_active, position, subgroup_id)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
   ).run(
@@ -307,8 +309,7 @@ app.post('/admin/items', upload.single('image'), async (req, res) => {
     is_new ? 1 : 0,
     is_active ? 1 : 0,
     Number(position || 0),
-    subtitle_group || '',
-    Number(subtitle_group_position || 0), // ← добавлено
+    subgroup_id || null, // ← добавлено
   );
 
   req.flash('success', 'Позиция добавлена');
@@ -346,7 +347,7 @@ app.post('/admin/items/:id', upload.single('image'), async (req, res) => {
       old_price = ?, weight = ?, image = ?, badges = ?, allergens = ?,
       promo_label = ?, promo_text = ?, promo_type = ?,
       is_popular = ?, is_new = ?, is_active = ?, position = ?,
-      subtitle_group = ?, subtitle_group_position = ? 
+      subgroup_id = ? 
     WHERE id = ?
   `,
   ).run(
@@ -366,8 +367,7 @@ app.post('/admin/items/:id', upload.single('image'), async (req, res) => {
     is_new ? 1 : 0,
     is_active ? 1 : 0,
     Number(position || 0),
-    subtitle_group || '',
-    Number(subtitle_group_position || 0), // ← добавлено
+    subgroup_id || null, // ← добавлено
     req.params.id,
   );
 
@@ -396,6 +396,37 @@ app.use((err, req, res, next) => {
   }
 
   res.status(500).send('Server error');
+});
+
+app.post('/admin/subgroups', (req, res) => {
+  const { category_id, title, position } = req.body;
+  db.prepare('INSERT INTO subgroups (category_id, title, position) VALUES (?, ?, ?)').run(
+    category_id,
+    title,
+    Number(position || 0),
+  );
+  req.flash('success', 'Подраздел добавлен');
+  res.redirect('/admin?tab=subgroups');
+});
+
+// Обновить подраздел
+app.post('/admin/subgroups/:id', (req, res) => {
+  const { category_id, title, position } = req.body;
+  db.prepare('UPDATE subgroups SET category_id = ?, title = ?, position = ? WHERE id = ?').run(
+    category_id,
+    title,
+    Number(position || 0),
+    req.params.id,
+  );
+  req.flash('success', 'Подраздел обновлён');
+  res.redirect('/admin?tab=subgroups');
+});
+
+// Удалить подраздел
+app.post('/admin/subgroups/:id/delete', (req, res) => {
+  db.prepare('DELETE FROM subgroups WHERE id = ?').run(req.params.id);
+  req.flash('success', 'Подраздел удалён');
+  res.redirect('/admin?tab=subgroups');
 });
 
 app.listen(PORT, () => {

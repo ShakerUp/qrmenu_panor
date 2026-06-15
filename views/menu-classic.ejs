@@ -46,30 +46,14 @@
           </div>
 
           <%
-            /* Группируем позиции по subtitle_group */
-            const grouped = [];
-            const groupMap = {};
-            cat.items.forEach(item => {
-              const g = (item.subtitle_group || '').trim();
-              if (!g) {
-                grouped.push({ group: null, items: [item], _single: true });
-              } else {
-                if (!groupMap[g]) {
-                  groupMap[g] = { group: g, items: [] };
-                  grouped.push(groupMap[g]);
-                }
-                groupMap[g].items.push(item);
-              }
-            });
-            /* Схлопываем одиночные (без группы) в один блок в начале */
-            const singles = grouped.filter(g => g._single).map(g => g.items[0]);
-            const groups  = grouped
-              .filter(g => !g._single)
-              .sort((a, b) => {
-                const posA = Math.min(...a.items.map(i => Number(i.subtitle_group_position || 0)));
-                const posB = Math.min(...b.items.map(i => Number(i.subtitle_group_position || 0)));
-                return posA - posB;
-              });
+            // Безопасная подготовка данных для JavaScript
+            const currentSubgroups = subgroups.filter(sg => sg.category_id === cat.id);
+            const singles = cat.items.filter(i => !i.subgroup_id);
+            const groups = currentSubgroups.map(sg => ({
+              group: sg.title,
+              position: sg.position,
+              items: cat.items.filter(i => i.subgroup_id === sg.id)
+            })).filter(g => g.items.length).sort((a, b) => a.position - b.position);
           %>
 
           <% if (singles.length) { %>
@@ -114,7 +98,6 @@
     </footer>
   </div>
 
-  <!-- LIGHTBOX -->
   <div class="lb-overlay" id="lb" role="dialog" aria-modal="true" aria-label="Просмотр фото" onclick="lbClose(event)">
     <button class="lb-close" onclick="lbHide()" aria-label="Закрыть">&times;</button>
     <img class="lb-img" id="lbImg" src="" alt="">

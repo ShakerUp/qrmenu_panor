@@ -27,6 +27,15 @@ CREATE TABLE IF NOT EXISTS categories (
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS subgroups (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  position INTEGER DEFAULT 0,
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+  UNIQUE(category_id, title)
+);
+
 CREATE TABLE IF NOT EXISTS items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category_id INTEGER NOT NULL,
@@ -64,6 +73,34 @@ addColumnIfNotExists('items', 'promo_text', "TEXT DEFAULT ''");
 addColumnIfNotExists('items', 'promo_type', "TEXT DEFAULT 'gift'");
 addColumnIfNotExists('items', 'subtitle_group', "TEXT DEFAULT ''");
 addColumnIfNotExists('items', 'subtitle_group_position', 'INTEGER DEFAULT 0');
+
+addColumnIfNotExists('items', 'subgroup_id', 'INTEGER REFERENCES subgroups(id) ON DELETE SET NULL');
+
+// Перенос старых subgroup в новую таблицу
+db.exec(`
+INSERT OR IGNORE INTO subgroups (category_id, title, position)
+SELECT DISTINCT
+  category_id,
+  subtitle_group,
+  COALESCE(subtitle_group_position, 0)
+FROM items
+WHERE subtitle_group IS NOT NULL
+  AND subtitle_group != '';
+`);
+
+// Связать блюда с subgroup
+db.exec(`
+UPDATE items
+SET subgroup_id = (
+  SELECT s.id
+  FROM subgroups s
+  WHERE s.category_id = items.category_id
+    AND s.title = items.subtitle_group
+)
+WHERE subgroup_id IS NULL
+  AND subtitle_group IS NOT NULL
+  AND subtitle_group != '';
+`);
 
 function setDefault(key, value) {
   const exists = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);

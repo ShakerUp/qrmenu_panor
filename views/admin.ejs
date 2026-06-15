@@ -35,6 +35,11 @@
           Разделы
           <span class="nav-badge"><%= categories.length %></span>
         </a>
+        <a class="nav-item <%= currentTab === 'subgroups' ? 'active' : '' %>" href="/admin?tab=subgroups">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg>
+          Подразделы
+          <span class="nav-badge"><%= subgroups.length %></span>
+        </a>
         <a class="nav-item <%= currentTab === 'items' || currentTab === 'edit-item' ? 'active' : '' %>" href="/admin?tab=items">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h11"/></svg>
           Позиции
@@ -280,6 +285,70 @@
           </div>
         </div>
 
+
+        <% } else if (currentTab === 'subgroups') { %>
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Подразделы</h1>
+              <p class="page-sub">Группировка блюд внутри раздела</p>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><h2 class="panel-title">Добавить подраздел</h2></div>
+            <form method="post" action="/admin/subgroups">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Раздел</label>
+                  <select class="form-input" name="category_id" required>
+                    <% categories.forEach(cat => { %>
+                      <option value="<%= cat.id %>"><%= cat.title %></option>
+                    <% }) %>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Название подраздела</label>
+                  <input class="form-input" name="title" required placeholder="Например: Роллы с лососем">
+                </div>
+                <div class="form-group form-group-sm">
+                  <label class="form-label">Позиция</label>
+                  <input class="form-input" name="position" type="number" value="0">
+                </div>
+              </div>
+              <div class="form-footer">
+                <button class="btn btn-primary" type="submit">Добавить</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Существующие подразделы</h2>
+              <span class="panel-count"><%= subgroups.length %></span>
+            </div>
+            <div class="cat-list">
+              <% subgroups.forEach(sg => { %>
+                <% const parentCat = categories.find(c => c.id === sg.category_id); %>
+                <form class="cat-row" method="post" action="/admin/subgroups/<%= sg.id %>">
+                  <span class="form-label" style="color:var(--muted);font-size:12px"><%= parentCat ? parentCat.title : '—' %></span>
+                  <select class="form-input form-input-sm" name="category_id">
+                    <% categories.forEach(cat => { %>
+                      <option value="<%= cat.id %>" <%= cat.id === sg.category_id ? 'selected' : '' %>><%= cat.title %></option>
+                    <% }) %>
+                  </select>
+                  <input class="form-input" name="title" value="<%= sg.title %>" required>
+                  <input class="form-input form-input-sm" name="position" type="number" value="<%= sg.position %>">
+                  <div class="row-actions">
+                    <button class="btn btn-sm" type="submit">Сохранить</button>
+                    <button class="btn btn-sm btn-danger"
+                      formaction="/admin/subgroups/<%= sg.id %>/delete"
+                      onclick="return confirm('Удалить подраздел «<%= sg.title %>»?')">Удалить</button>
+                  </div>
+                </form>
+              <% }) %>
+            </div>
+          </div>
+
       <!-- ═══════════════════════════════
            ITEMS LIST
       ═══════════════════════════════ -->
@@ -390,14 +459,15 @@
                 <textarea class="form-input form-textarea" name="description" rows="3" placeholder="Состав и описание..."></textarea>
               </div>
               <div class="form-group">
-                <label class="form-label">Подраздел (группа)</label>
-                <input class="form-input" name="subtitle_group" placeholder="Классические роли / Запечённые / Горячие">
-                <span class="form-hint">Позиции с одинаковым подразделом будут сгруппированы внутри раздела</span>
-              </div>
-              <div class="form-group form-group-sm">
-                <label class="form-label">Порядок подраздела</label>
-                <input class="form-input" name="subtitle_group_position" type="number" value="0">
-                <span class="form-hint">Чем меньше — тем выше подраздел</span>
+                <label class="form-label">Подраздел (необязательно)</label>
+                <select class="form-input" name="subgroup_id">
+                  <option value="">— без подраздела —</option>
+                  <% subgroups.filter(sg => sg.category_id == (editItem ? editItem.category_id : categories[0]?.id)).forEach(sg => { %>
+                    <option value="<%= sg.id %>" <%= editItem && editItem.subgroup_id === sg.id ? 'selected' : '' %>>
+                      <%= sg.title %>
+                    </option>
+                  <% }) %>
+                </select>
               </div>
               <div class="form-group">
                 <label class="form-label">Бейджи</label>
@@ -499,15 +569,16 @@
                 <label class="form-label">Описание</label>
                 <textarea class="form-input form-textarea" name="description" rows="3"><%= editItem.description %></textarea>
               </div>
-              <div class="form-group">
-                <label class="form-label">Подраздел (группа)</label>
-                <input class="form-input" name="subtitle_group" value="<%= editItem.subtitle_group || '' %>" placeholder="Классические роли / Запечённые / Горячие">
-                <span class="form-hint">Позиции с одинаковым подразделом будут сгруппированы внутри раздела</span>
-              </div>
-              <div class="form-group form-group-sm">
-                <label class="form-label">Порядок подраздела</label>
-                <input class="form-input" name="subtitle_group_position" type="number" value="<%= editItem.subtitle_group_position || 0 %>">
-                <span class="form-hint">Чем меньше — тем выше подраздел</span>
+             <div class="form-group">
+                <label class="form-label">Подраздел (необязательно)</label>
+                <select class="form-input" name="subgroup_id">
+                  <option value="">— без подраздела —</option>
+                  <% subgroups.filter(sg => sg.category_id == (editItem ? editItem.category_id : categories[0]?.id)).forEach(sg => { %>
+                    <option value="<%= sg.id %>" <%= editItem && editItem.subgroup_id === sg.id ? 'selected' : '' %>>
+                      <%= sg.title %>
+                    </option>
+                  <% }) %>
+                </select>
               </div>
               <div class="form-group">
                 <label class="form-label">Бейджи</label>
