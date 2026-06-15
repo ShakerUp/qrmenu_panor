@@ -174,35 +174,27 @@ app.use('/admin', requireAdmin, adminLimiter);
 
 app.get('/admin', (req, res) => {
   const s = settings();
+  const tab = req.query.tab || 'dashboard';
 
   const categories = db.prepare('SELECT * FROM categories ORDER BY position, id').all();
 
   const items = db
     .prepare(
       `
-      SELECT items.*, categories.title as category_title
-      FROM items
-      LEFT JOIN categories ON categories.id = items.category_id
-      ORDER BY categories.position, items.position, items.id
+    SELECT items.*, categories.title as category_title
+    FROM items
+    LEFT JOIN categories ON categories.id = items.category_id
+    ORDER BY categories.position, items.position, items.id
   `,
     )
     .all();
 
-  const currentTab = req.query.tab || 'dashboard';
-
   let editItem = null;
-
-  if (currentTab === 'edit-item' && req.query.id) {
+  if (tab === 'edit-item' && req.query.id) {
     editItem = db.prepare('SELECT * FROM items WHERE id = ?').get(req.query.id);
   }
 
-  res.render('admin_v2', {
-    settings: s,
-    categories,
-    items,
-    currentTab,
-    editItem,
-  });
+  res.render('admin', { settings: s, categories, items, currentTab: tab, editItem });
 });
 
 app.post('/admin/settings', upload.single('cover_image'), async (req, res) => {
@@ -286,30 +278,16 @@ app.post('/admin/items', upload.single('image'), async (req, res) => {
     promo_label,
     promo_text,
     promo_type,
+    subtitle_group,
   } = req.body;
 
   db.prepare(
     `
     INSERT INTO items
-    (
-      category_id,
-      title,
-      description,
-      price,
-      old_price,
-      weight,
-      image,
-      badges,
-      allergens,
-      promo_label,
-      promo_text,
-      promo_type,
-      is_popular,
-      is_new,
-      is_active,
-      position
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (category_id, title, description, price, old_price, weight, image,
+     badges, allergens, promo_label, promo_text, promo_type,
+     is_popular, is_new, is_active, position, subtitle_group)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
   ).run(
     category_id,
@@ -328,15 +306,16 @@ app.post('/admin/items', upload.single('image'), async (req, res) => {
     is_new ? 1 : 0,
     is_active ? 1 : 0,
     Number(position || 0),
+    subtitle_group || '', // ← добавлено
   );
 
   req.flash('success', 'Позиция добавлена');
   res.redirect('/admin');
 });
 
-app.post('/admin/items/:id', upload.single('image'), (req, res) => {
+app.post('/admin/items/:id', upload.single('image'), async (req, res) => {
   const current = db.prepare('SELECT image FROM items WHERE id = ?').get(req.params.id);
-  const image = req.file ? `/public/uploads/${req.file.filename}` : current?.image || '';
+  const image = req.file ? await optimizeImage(req.file) : current?.image || '';
 
   const {
     category_id,
@@ -354,28 +333,17 @@ app.post('/admin/items/:id', upload.single('image'), (req, res) => {
     promo_label,
     promo_text,
     promo_type,
+    subtitle_group, // ← добавлено
   } = req.body;
 
   db.prepare(
     `
-    UPDATE items
-    SET
-      category_id = ?,
-      title = ?,
-      description = ?,
-      price = ?,
-      old_price = ?,
-      weight = ?,
-      image = ?,
-      badges = ?,
-      allergens = ?,
-      promo_label = ?,
-      promo_text = ?,
-      promo_type = ?,
-      is_popular = ?,
-      is_new = ?,
-      is_active = ?,
-      position = ?
+    UPDATE items SET
+      category_id = ?, title = ?, description = ?, price = ?,
+      old_price = ?, weight = ?, image = ?, badges = ?, allergens = ?,
+      promo_label = ?, promo_text = ?, promo_type = ?,
+      is_popular = ?, is_new = ?, is_active = ?, position = ?,
+      subtitle_group = ?   -- ← добавлено
     WHERE id = ?
   `,
   ).run(
@@ -395,6 +363,7 @@ app.post('/admin/items/:id', upload.single('image'), (req, res) => {
     is_new ? 1 : 0,
     is_active ? 1 : 0,
     Number(position || 0),
+    subtitle_group || '', // ← добавлено
     req.params.id,
   );
 

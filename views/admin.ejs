@@ -3,168 +3,580 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Админка меню</title>
+  <title>Админка — <%= settings.restaurant_name %></title>
   <link rel="stylesheet" href="/public/css/style.css?v=<%= Date.now() %>">
 </head>
 <body class="admin-body">
-  <header class="admin-topbar">
-    <div><strong>Админ-панель меню</strong><span>Редактирование QR-меню</span></div>
-    <div class="top-actions">
-      <a class="btn" href="/" target="_blank">Открыть меню</a>
-      <form method="post" action="/admin/logout"><button class="btn danger">Выйти</button></form>
-    </div>
-  </header>
 
-  <main class="admin-wrap">
-    <% if (flash.success) { %><div class="alert success"><%= flash.success[0] %></div><% } %>
-    <% if (flash.error) { %><div class="alert error"><%= flash.error[0] %></div><% } %>
+  <div class="admin-layout">
 
-    <section class="panel">
-      <h2>Настройки ресторана</h2>
-      <form class="admin-form grid-form" method="post" action="/admin/settings" enctype="multipart/form-data">
-        <label>Название <input name="restaurant_name" value="<%= settings.restaurant_name %>" required></label>
-        <label>Подзаголовок <input name="restaurant_subtitle" value="<%= settings.restaurant_subtitle %>"></label>
-        <label>Валюта <input name="currency" value="<%= settings.currency %>" required></label>
-        <label>Основной цвет <input type="color" name="theme_color" value="<%= settings.theme_color %>"></label>
-        <label>Акцент <input type="color" name="accent_color" value="<%= settings.accent_color %>"></label>
-
-        <label class="wide">
-          Обложка
-          <% if (settings.cover_image) { %>
-            <div class="admin-preview">
-              <img src="<%= settings.cover_image %>?v=<%= Date.now() %>" alt="Обложка ресторана">
-            </div>
-          <% } %>
-          <input type="file" name="cover_image" accept="image/*">
-        </label>
-
-        <button class="btn primary">Сохранить настройки</button>
-      </form>
-    </section>
-
-    <section class="panel">
-      <h2>Добавить раздел</h2>
-      <form class="admin-form grid-form" method="post" action="/admin/categories">
-        <label>Название <input name="title" required placeholder="Например: Завтраки"></label>
-        <label>Описание <input name="description" placeholder="Короткое описание"></label>
-        <label>Позиция <input name="position" type="number" value="0"></label>
-        <label class="check"><input type="checkbox" name="is_active" checked> Показывать</label>
-        <button class="btn primary">Добавить раздел</button>
-      </form>
-    </section>
-
-    <section class="panel">
-      <h2>Разделы</h2>
-      <div class="admin-list">
-        <% categories.forEach(cat => { %>
-          <form class="row-card" method="post" action="/admin/categories/<%= cat.id %>">
-            <input name="title" value="<%= cat.title %>" required>
-            <input name="description" value="<%= cat.description %>" placeholder="Описание">
-            <input name="position" type="number" value="<%= cat.position %>">
-            <label class="check"><input type="checkbox" name="is_active" <%= cat.is_active ? 'checked' : '' %>> Показывать</label>
-            <button class="btn">Сохранить</button>
-            <button class="btn danger" formaction="/admin/categories/<%= cat.id %>/delete" onclick="return confirm('Удалить раздел и все блюда внутри?')">Удалить</button>
-          </form>
-        <% }) %>
+    <!-- SIDEBAR -->
+    <aside class="admin-sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">&#9755;</div>
+        <div class="sidebar-name"><%= settings.restaurant_name %></div>
+        <div class="sidebar-sub">Панель управления</div>
       </div>
-    </section>
 
-    <section class="panel">
-      <h2>Добавить позицию</h2>
-      <form class="admin-form grid-form" method="post" action="/admin/items" enctype="multipart/form-data">
-        <label>Раздел
-          <select name="category_id" required>
-            <% categories.forEach(cat => { %>
-              <option value="<%= cat.id %>"><%= cat.title %></option>
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Обзор</div>
+        <a class="nav-item <%= currentTab === 'dashboard' ? 'active' : '' %>" href="/admin?tab=dashboard">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Обзор
+        </a>
+        <a class="nav-item <%= currentTab === 'settings' ? 'active' : '' %>" href="/admin?tab=settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Настройки
+        </a>
+
+        <div class="nav-section-label">Меню</div>
+        <a class="nav-item <%= currentTab === 'categories' ? 'active' : '' %>" href="/admin?tab=categories">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+          Разделы
+          <span class="nav-badge"><%= categories.length %></span>
+        </a>
+        <a class="nav-item <%= currentTab === 'items' || currentTab === 'edit-item' ? 'active' : '' %>" href="/admin?tab=items">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h11"/></svg>
+          Позиции
+          <span class="nav-badge"><%= items.length %></span>
+        </a>
+        <a class="nav-item nav-item-add <%= currentTab === 'add-item' ? 'active' : '' %>" href="/admin?tab=add-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Добавить позицию
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="/" target="_blank" class="sidebar-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Открыть меню
+        </a>
+        <form method="post" action="/admin/logout" style="margin:0">
+          <button class="sidebar-link sidebar-logout">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Выйти
+          </button>
+        </form>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+
+      <% if (flash.success) { %>
+        <div class="flash-bar flash-success">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <%= flash.success[0] %>
+        </div>
+      <% } %>
+      <% if (flash.error) { %>
+        <div class="flash-bar flash-error">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <%= flash.error[0] %>
+        </div>
+      <% } %>
+
+      <!-- ═══════════════════════════════
+           DASHBOARD
+      ═══════════════════════════════ -->
+      <% if (currentTab === 'dashboard') { %>
+
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Обзор</h1>
+            <p class="page-sub">Состояние вашего меню</p>
+          </div>
+          <a href="/admin?tab=add-item" class="btn btn-primary">+ Добавить позицию</a>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Разделов</div>
+            <div class="stat-value"><%= categories.length %></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Позиций в меню</div>
+            <div class="stat-value"><%= items.length %></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Со скидкой / акцией</div>
+            <div class="stat-value"><%= items.filter(i => i.promo_label).length %></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Скрытых позиций</div>
+            <div class="stat-value"><%= items.filter(i => !i.is_active).length %></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Все позиции</h2>
+            <a href="/admin?tab=add-item" class="btn btn-sm">Добавить</a>
+          </div>
+          <div class="item-list">
+            <% items.forEach(item => { %>
+              <div class="item-row">
+                <div class="item-thumb">
+                  <% if (item.image) { %><img src="<%= item.image %>?v=<%= Date.now() %>" alt="<%= item.title %>"><% } else { %>&#127869;<% } %>
+                </div>
+                <div class="item-info">
+                  <div class="item-title-row">
+                    <span class="item-name"><%= item.title %></span>
+                    <% if (item.is_new) { %><span class="badge badge-new">Новинка</span><% } %>
+                    <% if (item.is_popular) { %><span class="badge badge-popular">Хит</span><% } %>
+                    <% if (!item.is_active) { %><span class="badge badge-inactive">Скрыто</span><% } %>
+                    <% if (item.promo_label) { %><span class="badge badge-promo"><%= item.promo_label %></span><% } %>
+                  </div>
+                  <div class="item-meta">
+                    <span><%= item.category_title %></span>
+                    <span class="item-price"><%= item.price %> <%= settings.currency %></span>
+                    <% if (item.weight) { %><span><%= item.weight %></span><% } %>
+                  </div>
+                </div>
+                <div class="item-actions">
+                  <a href="/admin?tab=edit-item&id=<%= item.id %>" class="btn btn-sm">Изменить</a>
+                  <form method="post" action="/admin/items/<%= item.id %>/delete" style="margin:0"
+                    onsubmit="return confirm('Удалить позицию «<%= item.title %>»?')">
+                    <button class="btn btn-sm btn-danger">Удалить</button>
+                  </form>
+                </div>
+              </div>
             <% }) %>
-          </select>
-        </label>
+          </div>
+        </div>
 
-        <label>Название <input name="title" required></label>
-        <label>Цена <input name="price" type="number" step="0.01" required></label>
-        <label>Старая цена <input name="old_price" type="number" step="0.01"></label>
+      <!-- ═══════════════════════════════
+           SETTINGS
+      ═══════════════════════════════ -->
+      <% } else if (currentTab === 'settings') { %>
 
-        <label>Промо-лейбл <input name="promo_label" placeholder="АКЦИЯ / ПОДАРОК / ВЫГОДА"></label>
-        <label>Текст акции <input name="promo_text" placeholder="Бесплатное пиво / Cola в подарок"></label>
-        <label>Тип акции
-          <select name="promo_type">
-            <option value="gift">Подарок</option>
-            <option value="discount">Скидка</option>
-            <option value="hot">Хит акция</option>
-          </select>
-        </label>
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Настройки</h1>
+            <p class="page-sub">Оформление и данные ресторана</p>
+          </div>
+        </div>
 
-        <label>Вес/объем <input name="weight" placeholder="250 г / 350 мл"></label>
-        <label>Позиция <input name="position" type="number" value="0"></label>
-        <label class="wide">Описание <textarea name="description" rows="3"></textarea></label>
-        <label>Бейджи <input name="badges" placeholder="vegan, spicy, chef"></label>
-        <label>Аллергены <input name="allergens" placeholder="глютен, молоко"></label>
-        <label>Фото <input type="file" name="image" accept="image/*"></label>
-
-        <label class="check"><input type="checkbox" name="is_popular"> Популярное</label>
-        <label class="check"><input type="checkbox" name="is_new"> Новинка</label>
-        <label class="check"><input type="checkbox" name="is_active" checked> Показывать</label>
-
-        <button class="btn primary">Добавить позицию</button>
-      </form>
-    </section>
-
-    <section class="panel">
-      <h2>Позиции меню</h2>
-      <div class="items-admin-list">
-        <% items.forEach(item => { %>
-          <form class="item-edit-card" method="post" action="/admin/items/<%= item.id %>" enctype="multipart/form-data">
-            <div class="thumb">
-              <% if (item.image) { %>
-                <img src="<%= item.image %>?v=<%= Date.now() %>" alt="<%= item.title %>">
-              <% } else { %>
-                🍽️
-              <% } %>
+        <form method="post" action="/admin/settings" enctype="multipart/form-data">
+          <div class="panel">
+            <div class="panel-header"><h2 class="panel-title">Основная информация</h2></div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Название ресторана</label>
+                <input class="form-input" name="restaurant_name" value="<%= settings.restaurant_name %>" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Подзаголовок</label>
+                <input class="form-input" name="restaurant_subtitle" value="<%= settings.restaurant_subtitle %>">
+              </div>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Символ валюты</label>
+                <input class="form-input" name="currency" value="<%= settings.currency %>" required>
+              </div>
             </div>
+          </div>
 
-            <div class="edit-grid">
-              <label>Раздел
-                <select name="category_id">
+          <div class="panel">
+            <div class="panel-header"><h2 class="panel-title">Цвета оформления</h2></div>
+            <div class="form-grid">
+              <div class="form-group form-group-sm">
+                <label class="form-label">Основной цвет</label>
+                <div class="color-row">
+                  <input type="color" class="color-input" name="theme_color" value="<%= settings.theme_color %>">
+                  <span class="color-hint"><%= settings.theme_color %></span>
+                </div>
+              </div>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Акцентный цвет</label>
+                <div class="color-row">
+                  <input type="color" class="color-input" name="accent_color" value="<%= settings.accent_color %>">
+                  <span class="color-hint"><%= settings.accent_color %></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><h2 class="panel-title">Обложка</h2></div>
+            <% if (settings.cover_image) { %>
+              <div class="cover-preview">
+                <img src="<%= settings.cover_image %>?v=<%= Date.now() %>" alt="Обложка">
+              </div>
+            <% } %>
+            <div class="form-group" style="margin-top:12px">
+              <label class="form-label">Загрузить новое изображение</label>
+              <input type="file" class="form-input" name="cover_image" accept="image/*">
+            </div>
+            <div class="form-footer">
+              <button class="btn btn-primary" type="submit">Сохранить настройки</button>
+            </div>
+          </div>
+        </form>
+
+      <!-- ═══════════════════════════════
+           CATEGORIES
+      ═══════════════════════════════ -->
+      <% } else if (currentTab === 'categories') { %>
+
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Разделы</h1>
+            <p class="page-sub">Категории вашего меню</p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><h2 class="panel-title">Добавить раздел</h2></div>
+          <form method="post" action="/admin/categories">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Название</label>
+                <input class="form-input" name="title" required placeholder="Например: Завтраки">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Описание</label>
+                <input class="form-input" name="description" placeholder="Краткое описание">
+              </div>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Позиция</label>
+                <input class="form-input" name="position" type="number" value="0">
+              </div>
+              <div class="form-group form-check-group">
+                <label class="form-check">
+                  <input type="checkbox" name="is_active" checked>
+                  Показывать
+                </label>
+              </div>
+            </div>
+            <div class="form-footer">
+              <button class="btn btn-primary" type="submit">Добавить раздел</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Существующие разделы</h2>
+            <span class="panel-count"><%= categories.length %></span>
+          </div>
+          <div class="cat-list">
+            <% categories.forEach(cat => { %>
+              <form class="cat-row" method="post" action="/admin/categories/<%= cat.id %>">
+                <input class="form-input" name="title" value="<%= cat.title %>" required>
+                <input class="form-input" name="description" value="<%= cat.description %>" placeholder="Описание">
+                <input class="form-input form-input-sm" name="position" type="number" value="<%= cat.position %>">
+                <label class="form-check">
+                  <input type="checkbox" name="is_active" <%= cat.is_active ? 'checked' : '' %>>
+                  Показывать
+                </label>
+                <div class="row-actions">
+                  <button class="btn btn-sm" type="submit">Сохранить</button>
+                  <button class="btn btn-sm btn-danger"
+                    formaction="/admin/categories/<%= cat.id %>/delete"
+                    onclick="return confirm('Удалить раздел «<%= cat.title %>» и все блюда?')">Удалить</button>
+                </div>
+              </form>
+            <% }) %>
+          </div>
+        </div>
+
+      <!-- ═══════════════════════════════
+           ITEMS LIST
+      ═══════════════════════════════ -->
+      <% } else if (currentTab === 'items') { %>
+
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Позиции меню</h1>
+            <p class="page-sub">Все блюда и напитки — <%= items.length %> позиций</p>
+          </div>
+          <a href="/admin?tab=add-item" class="btn btn-primary">+ Добавить</a>
+        </div>
+
+        <div class="panel">
+          <div class="panel-filter-row">
+            <select class="form-select" id="filterCat" onchange="filterItems()">
+              <option value="">Все разделы</option>
+              <% categories.forEach(cat => { %>
+                <option value="<%= cat.id %>"><%= cat.title %></option>
+              <% }) %>
+            </select>
+            <select class="form-select" id="filterStatus" onchange="filterItems()">
+              <option value="">Все статусы</option>
+              <option value="active">Активные</option>
+              <option value="hidden">Скрытые</option>
+            </select>
+          </div>
+
+          <div class="item-list" id="itemList">
+            <% items.forEach(item => { %>
+              <div class="item-row" data-cat="<%= item.category_id %>" data-active="<%= item.is_active %>">
+                <div class="item-thumb">
+                  <% if (item.image) { %><img src="<%= item.image %>?v=<%= Date.now() %>" alt="<%= item.title %>"><% } else { %>&#127869;<% } %>
+                </div>
+                <div class="item-info">
+                  <div class="item-title-row">
+                    <span class="item-name"><%= item.title %></span>
+                    <% if (item.is_new) { %><span class="badge badge-new">Новинка</span><% } %>
+                    <% if (item.is_popular) { %><span class="badge badge-popular">Хит</span><% } %>
+                    <% if (!item.is_active) { %><span class="badge badge-inactive">Скрыто</span><% } %>
+                    <% if (item.promo_label) { %><span class="badge badge-promo"><%= item.promo_label %></span><% } %>
+                  </div>
+                  <div class="item-meta">
+                    <span><%= item.category_title %></span>
+                    <span class="item-price"><%= item.price %> <%= settings.currency %></span>
+                    <% if (item.weight) { %><span><%= item.weight %></span><% } %>
+                    <% if (item.old_price) { %><span class="item-old-price"><%= item.old_price %> <%= settings.currency %></span><% } %>
+                  </div>
+                </div>
+                <div class="item-actions">
+                  <a href="/admin?tab=edit-item&id=<%= item.id %>" class="btn btn-sm">Изменить</a>
+                  <form method="post" action="/admin/items/<%= item.id %>/delete" style="margin:0"
+                    onsubmit="return confirm('Удалить позицию «<%= item.title %>»?')">
+                    <button class="btn btn-sm btn-danger">Удалить</button>
+                  </form>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+
+      <!-- ═══════════════════════════════
+           ADD ITEM
+      ═══════════════════════════════ -->
+      <% } else if (currentTab === 'add-item') { %>
+
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Добавить позицию</h1>
+            <p class="page-sub">Новое блюдо или напиток</p>
+          </div>
+        </div>
+
+        <form method="post" action="/admin/items" enctype="multipart/form-data">
+          <div class="panel">
+            <div class="panel-header"><h2 class="panel-title">Основное</h2></div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Раздел</label>
+                <select class="form-input" name="category_id" required>
                   <% categories.forEach(cat => { %>
-                    <option value="<%= cat.id %>" <%= cat.id === item.category_id ? 'selected' : '' %>><%= cat.title %></option>
+                    <option value="<%= cat.id %>"><%= cat.title %></option>
                   <% }) %>
                 </select>
-              </label>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Название</label>
+                <input class="form-input" name="title" required placeholder="Название блюда">
+              </div>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Вес / объём</label>
+                <input class="form-input" name="weight" placeholder="250 г / 350 мл">
+              </div>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Цена</label>
+                <input class="form-input" name="price" type="number" step="0.01" required>
+              </div>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Старая цена</label>
+                <input class="form-input" name="old_price" type="number" step="0.01">
+              </div>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Позиция</label>
+                <input class="form-input" name="position" type="number" value="0">
+              </div>
+              <div class="form-group form-group-full">
+                <label class="form-label">Описание</label>
+                <textarea class="form-input form-textarea" name="description" rows="3" placeholder="Состав и описание..."></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Подраздел (группа)</label>
+                <input class="form-input" name="subtitle_group" placeholder="Классические роли / Запечённые / Горячие">
+                <span class="form-hint">Позиции с одинаковым подразделом будут сгруппированы внутри раздела</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Бейджи</label>
+                <input class="form-input" name="badges" placeholder="vegan, spicy, chef">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Аллергены</label>
+                <input class="form-input" name="allergens" placeholder="глютен, молоко">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Фото</label>
+                <input type="file" class="form-input" name="image" accept="image/*">
+              </div>
+              <div class="form-flags">
+                <label class="form-check"><input type="checkbox" name="is_popular"> Популярное</label>
+                <label class="form-check"><input type="checkbox" name="is_new"> Новинка</label>
+                <label class="form-check"><input type="checkbox" name="is_active" checked> Показывать</label>
+              </div>
+            </div>
+          </div>
 
-              <label>Название <input name="title" value="<%= item.title %>" required></label>
-              <label>Цена <input name="price" type="number" step="0.01" value="<%= item.price %>" required></label>
-              <label>Старая цена <input name="old_price" type="number" step="0.01" value="<%= item.old_price || '' %>"></label>
-
-              <label>Промо-лейбл <input name="promo_label" value="<%= item.promo_label || '' %>" placeholder="АКЦИЯ / ПОДАРОК / ВЫГОДА"></label>
-              <label>Текст акции <input name="promo_text" value="<%= item.promo_text || '' %>" placeholder="Бесплатное пиво / Cola в подарок"></label>
-              <label>Тип акции
-                <select name="promo_type">
-                  <option value="gift" <%= item.promo_type === 'gift' ? 'selected' : '' %>>Подарок</option>
-                  <option value="discount" <%= item.promo_type === 'discount' ? 'selected' : '' %>>Скидка</option>
-                  <option value="hot" <%= item.promo_type === 'hot' ? 'selected' : '' %>>Хит акция</option>
+          <div class="panel panel-promo">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Акция</h2>
+                <p class="panel-sub">Оставьте пустым, если акции нет</p>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Промо-лейбл</label>
+                <input class="form-input" name="promo_label" placeholder="АКЦИЯ / ПОДАРОК">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Текст акции</label>
+                <input class="form-input" name="promo_text" placeholder="Cola в подарок">
+              </div>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Тип</label>
+                <select class="form-input" name="promo_type">
+                  <option value="gift">Подарок</option>
+                  <option value="discount">Скидка</option>
+                  <option value="hot">Хит акция</option>
                 </select>
-              </label>
-
-              <label>Вес <input name="weight" value="<%= item.weight %>"></label>
-              <label>Позиция <input name="position" type="number" value="<%= item.position %>"></label>
-              <label class="wide">Описание <textarea name="description"><%= item.description %></textarea></label>
-              <label>Бейджи <input name="badges" value="<%= item.badges %>"></label>
-              <label>Аллергены <input name="allergens" value="<%= item.allergens %>"></label>
-              <label>Новое фото <input type="file" name="image" accept="image/*"></label>
-
-              <label class="check"><input type="checkbox" name="is_popular" <%= item.is_popular ? 'checked' : '' %>> Популярное</label>
-              <label class="check"><input type="checkbox" name="is_new" <%= item.is_new ? 'checked' : '' %>> Новинка</label>
-              <label class="check"><input type="checkbox" name="is_active" <%= item.is_active ? 'checked' : '' %>> Показывать</label>
+              </div>
             </div>
-
-            <div class="card-actions">
-              <button class="btn">Сохранить</button>
-              <button class="btn danger" formaction="/admin/items/<%= item.id %>/delete" onclick="return confirm('Удалить позицию?')">Удалить</button>
+            <div class="form-footer">
+              <button class="btn btn-primary" type="submit">Добавить позицию</button>
             </div>
-          </form>
-        <% }) %>
-      </div>
-    </section>
-  </main>
+          </div>
+        </form>
+
+      <!-- ═══════════════════════════════
+           EDIT ITEM
+      ═══════════════════════════════ -->
+      <% } else if (currentTab === 'edit-item' && editItem) { %>
+
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Изменить позицию</h1>
+            <p class="page-sub"><%= editItem.title %></p>
+          </div>
+          <a href="/admin?tab=items" class="btn">&#8592; Назад к списку</a>
+        </div>
+
+        <form method="post" action="/admin/items/<%= editItem.id %>" enctype="multipart/form-data">
+          <div class="panel">
+            <div class="panel-header"><h2 class="panel-title">Основное</h2></div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Раздел</label>
+                <select class="form-input" name="category_id">
+                  <% categories.forEach(cat => { %>
+                    <option value="<%= cat.id %>" <%= cat.id === editItem.category_id ? 'selected' : '' %>><%= cat.title %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Название</label>
+                <input class="form-input" name="title" value="<%= editItem.title %>" required>
+              </div>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Вес / объём</label>
+                <input class="form-input" name="weight" value="<%= editItem.weight %>">
+              </div>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Цена</label>
+                <input class="form-input" name="price" type="number" step="0.01" value="<%= editItem.price %>" required>
+              </div>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Старая цена</label>
+                <input class="form-input" name="old_price" type="number" step="0.01" value="<%= editItem.old_price || '' %>">
+              </div>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Позиция</label>
+                <input class="form-input" name="position" type="number" value="<%= editItem.position %>">
+              </div>
+              <div class="form-group form-group-full">
+                <label class="form-label">Описание</label>
+                <textarea class="form-input form-textarea" name="description" rows="3"><%= editItem.description %></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Подраздел (группа)</label>
+                <input class="form-input" name="subtitle_group" value="<%= editItem.subtitle_group || '' %>" placeholder="Классические роли / Запечённые / Горячие">
+                <span class="form-hint">Позиции с одинаковым подразделом будут сгруппированы внутри раздела</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Бейджи</label>
+                <input class="form-input" name="badges" value="<%= editItem.badges %>">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Аллергены</label>
+                <input class="form-input" name="allergens" value="<%= editItem.allergens %>">
+              </div>
+              <div class="form-group">
+                <label class="form-label"><% if (editItem.image) { %>Новое фото<% } else { %>Фото<% } %></label>
+                <% if (editItem.image) { %>
+                  <div class="thumb-preview">
+                    <img src="<%= editItem.image %>?v=<%= Date.now() %>" alt="<%= editItem.title %>">
+                  </div>
+                <% } %>
+                <input type="file" class="form-input" name="image" accept="image/*" style="margin-top:8px">
+              </div>
+              <div class="form-flags">
+                <label class="form-check"><input type="checkbox" name="is_popular" <%= editItem.is_popular ? 'checked' : '' %>> Популярное</label>
+                <label class="form-check"><input type="checkbox" name="is_new" <%= editItem.is_new ? 'checked' : '' %>> Новинка</label>
+                <label class="form-check"><input type="checkbox" name="is_active" <%= editItem.is_active ? 'checked' : '' %>> Показывать</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel panel-promo">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Акция</h2>
+                <p class="panel-sub">Оставьте пустым, если акции нет</p>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Промо-лейбл</label>
+                <input class="form-input" name="promo_label" value="<%= editItem.promo_label || '' %>" placeholder="АКЦИЯ / ПОДАРОК">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Текст акции</label>
+                <input class="form-input" name="promo_text" value="<%= editItem.promo_text || '' %>" placeholder="Cola в подарок">
+              </div>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Тип</label>
+                <select class="form-input" name="promo_type">
+                  <option value="gift" <%= editItem.promo_type === 'gift' ? 'selected' : '' %>>Подарок</option>
+                  <option value="discount" <%= editItem.promo_type === 'discount' ? 'selected' : '' %>>Скидка</option>
+                  <option value="hot" <%= editItem.promo_type === 'hot' ? 'selected' : '' %>>Хит акция</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-footer">
+              <form method="post" action="/admin/items/<%= editItem.id %>/delete" style="margin:0"
+                onsubmit="return confirm('Удалить позицию «<%= editItem.title %>»?')">
+                <button class="btn btn-danger" type="submit">Удалить позицию</button>
+              </form>
+              <button class="btn btn-primary" type="submit">Сохранить изменения</button>
+            </div>
+          </div>
+        </form>
+
+      <% } %>
+
+    </main>
+  </div>
+
+  <script>
+    function filterItems() {
+      const cat = document.getElementById('filterCat').value;
+      const status = document.getElementById('filterStatus').value;
+      document.querySelectorAll('#itemList .item-row').forEach(function(row) {
+        const matchCat = !cat || row.dataset.cat === cat;
+        const matchStatus = !status
+          || (status === 'active' && row.dataset.active === '1')
+          || (status === 'hidden' && row.dataset.active === '0');
+        row.style.display = matchCat && matchStatus ? '' : 'none';
+      });
+    }
+  </script>
+
 </body>
 </html>

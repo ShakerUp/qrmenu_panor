@@ -1,0 +1,67 @@
+<article class="classic-card">
+  <div class="classic-image <%= item.promo_text ? 'has-promo' : '' %>"
+    <% if (item.image) { %>
+      onclick="lbShow('<%= item.image %>')" role="button" tabindex="0"
+      aria-label="Открыть фото: <%= item.title %>"
+      onkeydown="if(event.key==='Enter'||event.key===' ')lbShow('<%= item.image %>')"
+    <% } %>
+  >
+    <% if (item.promo_text) { %>
+      <div class="promo-ribbon">АКЦІЯ</div>
+    <% } %>
+
+    <% if (item.image) { %>
+      <img src="<%= item.image %>" alt="<%= item.title %>" loading="lazy" decoding="async" class="lb-trigger">
+    <% } else { %>
+      <div class="classic-placeholder">🍽️</div>
+    <% } %>
+
+    <% if (item.promo_text) { %>
+      <div class="photo-gift-badge">
+        <span>🎁</span>
+        <strong><%= item.promo_text %></strong>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="classic-content">
+    <div class="classic-badges">
+      <% if (item.is_popular) { %><span class="classic-badge green">Популярное</span><% } %>
+      <% if (item.is_new) { %><span class="classic-badge red">New</span><% } %>
+      <% if (item.promo_text) { %>
+        <span class="classic-badge gold">
+          <% if ((item.promo_type || 'gift') === 'gift') { %>🎁<% } %>
+          <% if (item.promo_type === 'discount') { %>💸<% } %>
+          <% if (item.promo_type === 'hot') { %>🔥<% } %>
+          <%= item.promo_text %>
+        </span>
+      <% } %>
+      <% if (item.badges) { item.badges.split(',').map(b => b.trim()).filter(Boolean).forEach(b => { %>
+        <span class="classic-badge muted"><%= b %></span>
+      <% }) } %>
+    </div>
+
+    <h3><%= item.title %></h3>
+
+    <% if (item.description) { %>
+      <p class="classic-desc"><%= item.description %></p>
+    <% } %>
+
+    <% if (item.weight) { %>
+      <div class="classic-weight"><%= item.weight %></div>
+    <% } %>
+
+    <div class="classic-price-row">
+      <% if (item.old_price) { %>
+        <span class="classic-old-price"><%= item.old_price %> <%= settings.currency %></span>
+      <% } %>
+      <strong class="classic-price"><%= item.price %> <%= settings.currency %></strong>
+    </div>
+
+    <% if (item.old_price && Number(item.old_price) > Number(item.price)) { %>
+      <div class="saving-badge">
+        🏷️ Економія <%= Math.round(Number(item.old_price) - Number(item.price)) %> <%= settings.currency %>
+      </div>
+    <% } %>
+  </div>
+</article>
