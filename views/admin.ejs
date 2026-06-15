@@ -428,7 +428,7 @@
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label">Раздел</label>
-                <select class="form-input" name="category_id" required>
+                <select class="form-input" name="category_id" id="categorySelect" required>
                   <% categories.forEach(cat => { %>
                     <option value="<%= cat.id %>"><%= cat.title %></option>
                   <% }) %>
@@ -460,13 +460,8 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Подраздел (необязательно)</label>
-                <select class="form-input" name="subgroup_id">
+                <select class="form-input" name="subgroup_id" id="subgroupSelect">
                   <option value="">— без подраздела —</option>
-                  <% subgroups.filter(sg => sg.category_id == (editItem ? editItem.category_id : categories[0]?.id)).forEach(sg => { %>
-                    <option value="<%= sg.id %>" <%= editItem && editItem.subgroup_id === sg.id ? 'selected' : '' %>>
-                      <%= sg.title %>
-                    </option>
-                  <% }) %>
                 </select>
               </div>
               <div class="form-group">
@@ -539,7 +534,7 @@
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label">Раздел</label>
-                <select class="form-input" name="category_id">
+                <select class="form-input" name="category_id" id="categorySelect">
                   <% categories.forEach(cat => { %>
                     <option value="<%= cat.id %>" <%= cat.id === editItem.category_id ? 'selected' : '' %>><%= cat.title %></option>
                   <% }) %>
@@ -571,13 +566,8 @@
               </div>
              <div class="form-group">
                 <label class="form-label">Подраздел (необязательно)</label>
-                <select class="form-input" name="subgroup_id">
+                <select class="form-input" name="subgroup_id" id="subgroupSelect">
                   <option value="">— без подраздела —</option>
-                  <% subgroups.filter(sg => sg.category_id == (editItem ? editItem.category_id : categories[0]?.id)).forEach(sg => { %>
-                    <option value="<%= sg.id %>" <%= editItem && editItem.subgroup_id === sg.id ? 'selected' : '' %>>
-                      <%= sg.title %>
-                    </option>
-                  <% }) %>
                 </select>
               </div>
               <div class="form-group">
@@ -657,6 +647,47 @@
         row.style.display = matchCat && matchStatus ? '' : 'none';
       });
     }
+
+
+    const allSubgroups = <%- JSON.stringify(subgroups || []) %>;
+    const selectedSubgroupId = '<%= editItem ? (editItem.subgroup_id || '') : '' %>';
+
+    function renderSubgroups() {
+      const categorySelect = document.getElementById('categorySelect');
+      const subgroupSelect = document.getElementById('subgroupSelect');
+
+      if (!categorySelect || !subgroupSelect) return;
+
+      const categoryId = String(categorySelect.value || '');
+      subgroupSelect.innerHTML = '<option value="">— без подраздела —</option>';
+
+      allSubgroups
+        .filter(function(sg) {
+          return String(sg.category_id) === categoryId;
+        })
+        .forEach(function(sg) {
+          const option = document.createElement('option');
+          option.value = sg.id;
+          option.textContent = sg.title;
+
+          if (String(sg.id) === String(selectedSubgroupId)) {
+            option.selected = true;
+          }
+
+          subgroupSelect.appendChild(option);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      renderSubgroups();
+
+      const categorySelect = document.getElementById('categorySelect');
+      if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+          renderSubgroups();
+        });
+      }
+    });
   </script>
 
 </body>

@@ -113,24 +113,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/', (req, res) => {
-  const s = settings();
-
-  const categories = db
-    .prepare('SELECT * FROM categories WHERE is_active = 1 ORDER BY position, id')
-    .all();
-
-  const items = db.prepare('SELECT * FROM items WHERE is_active = 1 ORDER BY position, id').all();
-  const subgroups = db.prepare('SELECT * FROM subgroups ORDER BY position, id').all(); // <- добавить
-
-  const grouped = categories.map((c) => ({
-    ...c,
-    items: items.filter((i) => i.category_id === c.id),
-  }));
-
-  res.render('menu-classic', { settings: s, categories: grouped, subgroups });
-});
-
 async function optimizeImage(file) {
   if (!file) return '';
 
@@ -148,6 +130,37 @@ async function optimizeImage(file) {
 
   return `/public/uploads/${outputName}`;
 }
+
+/* =========================
+   PUBLIC MENU
+========================= */
+
+app.get('/', (req, res) => {
+  const s = settings();
+
+  const categories = db
+    .prepare('SELECT * FROM categories WHERE is_active = 1 ORDER BY position, id')
+    .all();
+
+  const items = db.prepare('SELECT * FROM items WHERE is_active = 1 ORDER BY position, id').all();
+
+  const subgroups = db.prepare('SELECT * FROM subgroups ORDER BY category_id, position, id').all();
+
+  const grouped = categories.map((c) => ({
+    ...c,
+    items: items.filter((i) => i.category_id === c.id),
+  }));
+
+  res.render('menu-classic', {
+    settings: s,
+    categories: grouped,
+    subgroups,
+  });
+});
+
+/* =========================
+   AUTH
+========================= */
 
 app.get('/admin/login', (req, res) => {
   res.render('login');
@@ -171,33 +184,54 @@ app.post('/admin/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/admin/login'));
 });
 
+/* =========================
+   ADMIN MIDDLEWARE
+========================= */
+
 app.use('/admin', requireAdmin, adminLimiter);
+
+/* =========================
+   ADMIN PAGE
+========================= */
 
 app.get('/admin', (req, res) => {
   const s = settings();
   const tab = req.query.tab || 'dashboard';
 
   const categories = db.prepare('SELECT * FROM categories ORDER BY position, id').all();
+
   const subgroups = db.prepare('SELECT * FROM subgroups ORDER BY category_id, position, id').all();
 
   const items = db
     .prepare(
       `
-    SELECT items.*, categories.title as category_title
-    FROM items
-    LEFT JOIN categories ON categories.id = items.category_id
-    ORDER BY categories.position, items.position, items.id
-  `,
+      SELECT items.*, categories.title AS category_title
+      FROM items
+      LEFT JOIN categories ON categories.id = items.category_id
+      ORDER BY categories.position, items.position, items.id
+      `,
     )
     .all();
 
   let editItem = null;
+
   if (tab === 'edit-item' && req.query.id) {
     editItem = db.prepare('SELECT * FROM items WHERE id = ?').get(req.query.id);
   }
 
-  res.render('admin', { settings: s, categories, subgroups, items, currentTab: tab, editItem });
+  res.render('admin', {
+    settings: s,
+    categories,
+    subgroups,
+    items,
+    currentTab: tab,
+    editItem,
+  });
 });
+
+/* =========================
+   SETTINGS
+========================= */
 
 app.post('/admin/settings', upload.single('cover_image'), async (req, res) => {
   const allowed = [
@@ -214,7 +248,9 @@ app.post('/admin/settings', upload.single('cover_image'), async (req, res) => {
     ON CONFLICT(key) DO UPDATE SET value = excluded.value
   `);
 
-  allowed.forEach((k) => stmt.run(k, req.body[k] || ''));
+  allowed.forEach((k) => {
+    stmt.run(k, req.body[k] || '');
+  });
 
   if (req.file) {
     const coverImage = await optimizeImage(req.file);
@@ -222,8 +258,12 @@ app.post('/admin/settings', upload.single('cover_image'), async (req, res) => {
   }
 
   req.flash('success', 'Настройки сохранены');
-  res.redirect('/admin');
+  res.redirect('/admin?tab=settings');
 });
+
+/* =========================
+   CATEGORIES
+========================= */
 
 app.post('/admin/categories', (req, res) => {
   const { title, description, position, is_active } = req.body;
@@ -232,11 +272,11 @@ app.post('/admin/categories', (req, res) => {
     `
     INSERT INTO categories (title, description, position, is_active)
     VALUES (?, ?, ?, ?)
-  `,
+    `,
   ).run(title, description || '', Number(position || 0), is_active ? 1 : 0);
 
   req.flash('success', 'Раздел добавлен');
-  res.redirect('/admin');
+  res.redirect('/admin?tab=categories');
 });
 
 app.post('/admin/categories/:id', (req, res) => {
@@ -247,19 +287,63 @@ app.post('/admin/categories/:id', (req, res) => {
     UPDATE categories
     SET title = ?, description = ?, position = ?, is_active = ?
     WHERE id = ?
-  `,
+    `,
   ).run(title, description || '', Number(position || 0), is_active ? 1 : 0, req.params.id);
 
   req.flash('success', 'Раздел обновлен');
-  res.redirect('/admin');
+  res.redirect('/admin?tab=categories');
 });
 
 app.post('/admin/categories/:id/delete', (req, res) => {
   db.prepare('DELETE FROM categories WHERE id = ?').run(req.params.id);
 
   req.flash('success', 'Раздел удален');
-  res.redirect('/admin');
+  res.redirect('/admin?tab=categories');
 });
+
+/* =========================
+   SUBGROUPS
+========================= */
+
+app.post('/admin/subgroups', (req, res) => {
+  const { category_id, title, position } = req.body;
+
+  db.prepare(
+    `
+    INSERT INTO subgroups (category_id, title, position)
+    VALUES (?, ?, ?)
+    `,
+  ).run(Number(category_id), title, Number(position || 0));
+
+  req.flash('success', 'Подраздел добавлен');
+  res.redirect('/admin?tab=subgroups');
+});
+
+app.post('/admin/subgroups/:id', (req, res) => {
+  const { category_id, title, position } = req.body;
+
+  db.prepare(
+    `
+    UPDATE subgroups
+    SET category_id = ?, title = ?, position = ?
+    WHERE id = ?
+    `,
+  ).run(Number(category_id), title, Number(position || 0), req.params.id);
+
+  req.flash('success', 'Подраздел обновлён');
+  res.redirect('/admin?tab=subgroups');
+});
+
+app.post('/admin/subgroups/:id/delete', (req, res) => {
+  db.prepare('DELETE FROM subgroups WHERE id = ?').run(req.params.id);
+
+  req.flash('success', 'Подраздел удалён');
+  res.redirect('/admin?tab=subgroups');
+});
+
+/* =========================
+   ITEMS
+========================= */
 
 app.post('/admin/items', upload.single('image'), async (req, res) => {
   const image = req.file ? await optimizeImage(req.file) : '';
@@ -280,24 +364,39 @@ app.post('/admin/items', upload.single('image'), async (req, res) => {
     promo_label,
     promo_text,
     promo_type,
-    subtitle_group,
-    subtitle_group_position,
+    subgroup_id,
   } = req.body;
 
   db.prepare(
     `
     INSERT INTO items
-    (category_id, title, description, price, old_price, weight, image,
-     badges, allergens, promo_label, promo_text, promo_type,
-     is_popular, is_new, is_active, position, subgroup_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `,
+    (
+      category_id,
+      title,
+      description,
+      price,
+      old_price,
+      weight,
+      image,
+      badges,
+      allergens,
+      promo_label,
+      promo_text,
+      promo_type,
+      is_popular,
+      is_new,
+      is_active,
+      position,
+      subgroup_id
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
   ).run(
-    category_id,
+    Number(category_id),
     title,
     description || '',
     Number(price || 0),
-    old_price || null,
+    old_price ? Number(old_price) : null,
     weight || '',
     image,
     badges || '',
@@ -309,11 +408,11 @@ app.post('/admin/items', upload.single('image'), async (req, res) => {
     is_new ? 1 : 0,
     is_active ? 1 : 0,
     Number(position || 0),
-    subgroup_id || null, // ← добавлено
+    subgroup_id ? Number(subgroup_id) : null,
   );
 
   req.flash('success', 'Позиция добавлена');
-  res.redirect('/admin');
+  res.redirect('/admin?tab=items');
 });
 
 app.post('/admin/items/:id', upload.single('image'), async (req, res) => {
@@ -336,26 +435,37 @@ app.post('/admin/items/:id', upload.single('image'), async (req, res) => {
     promo_label,
     promo_text,
     promo_type,
-    subtitle_group,
-    subtitle_group_position, // ← добавлено
+    subgroup_id,
   } = req.body;
 
   db.prepare(
     `
     UPDATE items SET
-      category_id = ?, title = ?, description = ?, price = ?,
-      old_price = ?, weight = ?, image = ?, badges = ?, allergens = ?,
-      promo_label = ?, promo_text = ?, promo_type = ?,
-      is_popular = ?, is_new = ?, is_active = ?, position = ?,
-      subgroup_id = ? 
+      category_id = ?,
+      title = ?,
+      description = ?,
+      price = ?,
+      old_price = ?,
+      weight = ?,
+      image = ?,
+      badges = ?,
+      allergens = ?,
+      promo_label = ?,
+      promo_text = ?,
+      promo_type = ?,
+      is_popular = ?,
+      is_new = ?,
+      is_active = ?,
+      position = ?,
+      subgroup_id = ?
     WHERE id = ?
-  `,
+    `,
   ).run(
-    category_id,
+    Number(category_id),
     title,
     description || '',
     Number(price || 0),
-    old_price || null,
+    old_price ? Number(old_price) : null,
     weight || '',
     image,
     badges || '',
@@ -367,20 +477,24 @@ app.post('/admin/items/:id', upload.single('image'), async (req, res) => {
     is_new ? 1 : 0,
     is_active ? 1 : 0,
     Number(position || 0),
-    subgroup_id || null, // ← добавлено
+    subgroup_id ? Number(subgroup_id) : null,
     req.params.id,
   );
 
   req.flash('success', 'Позиция обновлена');
-  res.redirect('/admin');
+  res.redirect('/admin?tab=items');
 });
 
 app.post('/admin/items/:id/delete', (req, res) => {
   db.prepare('DELETE FROM items WHERE id = ?').run(req.params.id);
 
   req.flash('success', 'Позиция удалена');
-  res.redirect('/admin');
+  res.redirect('/admin?tab=items');
 });
+
+/* =========================
+   ERROR HANDLER
+========================= */
 
 app.use((err, req, res, next) => {
   console.error(err);
@@ -398,36 +512,9 @@ app.use((err, req, res, next) => {
   res.status(500).send('Server error');
 });
 
-app.post('/admin/subgroups', (req, res) => {
-  const { category_id, title, position } = req.body;
-  db.prepare('INSERT INTO subgroups (category_id, title, position) VALUES (?, ?, ?)').run(
-    category_id,
-    title,
-    Number(position || 0),
-  );
-  req.flash('success', 'Подраздел добавлен');
-  res.redirect('/admin?tab=subgroups');
-});
-
-// Обновить подраздел
-app.post('/admin/subgroups/:id', (req, res) => {
-  const { category_id, title, position } = req.body;
-  db.prepare('UPDATE subgroups SET category_id = ?, title = ?, position = ? WHERE id = ?').run(
-    category_id,
-    title,
-    Number(position || 0),
-    req.params.id,
-  );
-  req.flash('success', 'Подраздел обновлён');
-  res.redirect('/admin?tab=subgroups');
-});
-
-// Удалить подраздел
-app.post('/admin/subgroups/:id/delete', (req, res) => {
-  db.prepare('DELETE FROM subgroups WHERE id = ?').run(req.params.id);
-  req.flash('success', 'Подраздел удалён');
-  res.redirect('/admin?tab=subgroups');
-});
+/* =========================
+   START SERVER
+========================= */
 
 app.listen(PORT, () => {
   console.log(`Menu site running: http://localhost:${PORT}`);
