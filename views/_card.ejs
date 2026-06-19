@@ -18,7 +18,21 @@
 
     <% if (item.promo_text) { %>
       <div class="photo-gift-badge">
-        <span>🎁</span>
+        <%
+          const promoType = item.promo_type || 'gift';
+          let promoIcon = '🎁';
+          let promoIconIsImg = false;
+          if (promoType === 'cola') {
+            promoIconIsImg = true;
+          } else if (promoType === 'beer') promoIcon = '🍺';
+          else if (promoType === 'discount') promoIcon = '💸';
+          else if (promoType === 'hot')  promoIcon = '🔥';
+        %>
+        <% if (promoIconIsImg) { %>
+          <img src="/public/uploads/pepsi.png" alt="Pepsi" class="promo-icon-img">
+        <% } else { %>
+          <span><%= promoIcon %></span>
+        <% } %>
         <strong><%= item.promo_text %></strong>
       </div>
     <% } %>
@@ -29,10 +43,20 @@
       <% if (item.is_popular) { %><span class="classic-badge green">Популярне</span><% } %>
       <% if (item.is_new) { %><span class="classic-badge red">New</span><% } %>
       <% if (item.promo_text) { %>
+        <%
+          const pt = item.promo_type || 'gift';
+          let bi = '🎁';
+          let biIsImg = false;
+          if (pt === 'cola') {
+            biIsImg = true;
+          } else if (pt === 'beer') bi = '🍺';
+          else if (pt === 'discount') bi = '💸';
+          else if (pt === 'hot')  bi = '🔥';
+        %>
         <span class="classic-badge gold">
-          <% if ((item.promo_type || 'gift') === 'gift') { %>🎁<% } %>
-          <% if (item.promo_type === 'discount') { %>💸<% } %>
-          <% if (item.promo_type === 'hot') { %>🔥<% } %>
+          <% if (biIsImg) { %>
+            <img src="/img/pepsi.png" alt="Pepsi" class="promo-icon-img">
+          <% } else { %><%= bi %><% } %>
           <%= item.promo_text %>
         </span>
       <% } %>

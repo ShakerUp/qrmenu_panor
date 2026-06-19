@@ -810,3 +810,14 @@ a {
   font-weight: 400;
   line-height: 1.4;
 }
+.photo-gift-badge img.promo-icon-img,
+.classic-badge img.promo-icon-img {
+  width: 25px !important;
+  height: 25px !important;
+  min-height: 0 !important;
+  max-width: 25px !important;
+  max-height: 25px !important;
+  object-fit: contain !important;
+  display: inline-block !important;
+  flex: 0 0 16px !important;
+}

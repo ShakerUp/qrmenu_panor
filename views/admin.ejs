@@ -81,9 +81,7 @@
         </div>
       <% } %>
 
-      <!-- ═══════════════════════════════
-           DASHBOARD
-      ═══════════════════════════════ -->
+      <!-- DASHBOARD -->
       <% if (currentTab === 'dashboard') { %>
 
         <div class="page-header">
@@ -150,9 +148,7 @@
           </div>
         </div>
 
-      <!-- ═══════════════════════════════
-           SETTINGS
-      ═══════════════════════════════ -->
+      <!-- SETTINGS -->
       <% } else if (currentTab === 'settings') { %>
 
         <div class="page-header">
@@ -218,9 +214,7 @@
           </div>
         </form>
 
-      <!-- ═══════════════════════════════
-           CATEGORIES
-      ═══════════════════════════════ -->
+      <!-- CATEGORIES -->
       <% } else if (currentTab === 'categories') { %>
 
         <div class="page-header">
@@ -285,73 +279,72 @@
           </div>
         </div>
 
+      <!-- SUBGROUPS -->
+      <% } else if (currentTab === 'subgroups') { %>
 
-        <% } else if (currentTab === 'subgroups') { %>
-          <div class="page-header">
-            <div>
-              <h1 class="page-title">Подразделы</h1>
-              <p class="page-sub">Группировка блюд внутри раздела</p>
-            </div>
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Подразделы</h1>
+            <p class="page-sub">Группировка блюд внутри раздела</p>
           </div>
+        </div>
 
-          <div class="panel">
-            <div class="panel-header"><h2 class="panel-title">Добавить подраздел</h2></div>
-            <form method="post" action="/admin/subgroups">
-              <div class="form-grid">
-                <div class="form-group">
-                  <label class="form-label">Раздел</label>
-                  <select class="form-input" name="category_id" required>
-                    <% categories.forEach(cat => { %>
-                      <option value="<%= cat.id %>"><%= cat.title %></option>
-                    <% }) %>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Название подраздела</label>
-                  <input class="form-input" name="title" required placeholder="Например: Роллы с лососем">
-                </div>
-                <div class="form-group form-group-sm">
-                  <label class="form-label">Позиция</label>
-                  <input class="form-input" name="position" type="number" value="0">
-                </div>
+        <div class="panel">
+          <div class="panel-header"><h2 class="panel-title">Добавить подраздел</h2></div>
+          <form method="post" action="/admin/subgroups">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Раздел</label>
+                <select class="form-input" name="category_id" required>
+                  <% categories.forEach(cat => { %>
+                    <option value="<%= cat.id %>"><%= cat.title %></option>
+                  <% }) %>
+                </select>
               </div>
-              <div class="form-footer">
-                <button class="btn btn-primary" type="submit">Добавить</button>
+              <div class="form-group">
+                <label class="form-label">Название подраздела</label>
+                <input class="form-input" name="title" required placeholder="Например: Роллы с лососем">
               </div>
-            </form>
-          </div>
-
-          <div class="panel">
-            <div class="panel-header">
-              <h2 class="panel-title">Существующие подразделы</h2>
-              <span class="panel-count"><%= subgroups.length %></span>
+              <div class="form-group form-group-sm">
+                <label class="form-label">Позиция</label>
+                <input class="form-input" name="position" type="number" value="0">
+              </div>
             </div>
-            <div class="cat-list">
-              <% subgroups.forEach(sg => { %>
-                <% const parentCat = categories.find(c => c.id === sg.category_id); %>
-                <form class="cat-row" method="post" action="/admin/subgroups/<%= sg.id %>">
-                  <span class="form-label" style="color:var(--muted);font-size:12px"><%= parentCat ? parentCat.title : '—' %></span>
-                  <select class="form-input form-input-sm" name="category_id">
-                    <% categories.forEach(cat => { %>
-                      <option value="<%= cat.id %>" <%= cat.id === sg.category_id ? 'selected' : '' %>><%= cat.title %></option>
-                    <% }) %>
-                  </select>
-                  <input class="form-input" name="title" value="<%= sg.title %>" required>
-                  <input class="form-input form-input-sm" name="position" type="number" value="<%= sg.position %>">
-                  <div class="row-actions">
-                    <button class="btn btn-sm" type="submit">Сохранить</button>
-                    <button class="btn btn-sm btn-danger"
-                      formaction="/admin/subgroups/<%= sg.id %>/delete"
-                      onclick="return confirm('Удалить подраздел «<%= sg.title %>»?')">Удалить</button>
-                  </div>
-                </form>
-              <% }) %>
+            <div class="form-footer">
+              <button class="btn btn-primary" type="submit">Добавить</button>
             </div>
-          </div>
+          </form>
+        </div>
 
-      <!-- ═══════════════════════════════
-           ITEMS LIST
-      ═══════════════════════════════ -->
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Существующие подразделы</h2>
+            <span class="panel-count"><%= subgroups.length %></span>
+          </div>
+          <div class="cat-list">
+            <% subgroups.forEach(sg => { %>
+              <% const parentCat = categories.find(c => c.id === sg.category_id); %>
+              <form class="cat-row" method="post" action="/admin/subgroups/<%= sg.id %>">
+                <span class="form-label" style="color:var(--muted);font-size:12px"><%= parentCat ? parentCat.title : '—' %></span>
+                <select class="form-input form-input-sm" name="category_id">
+                  <% categories.forEach(cat => { %>
+                    <option value="<%= cat.id %>" <%= cat.id === sg.category_id ? 'selected' : '' %>><%= cat.title %></option>
+                  <% }) %>
+                </select>
+                <input class="form-input" name="title" value="<%= sg.title %>" required>
+                <input class="form-input form-input-sm" name="position" type="number" value="<%= sg.position %>">
+                <div class="row-actions">
+                  <button class="btn btn-sm" type="submit">Сохранить</button>
+                  <button class="btn btn-sm btn-danger"
+                    formaction="/admin/subgroups/<%= sg.id %>/delete"
+                    onclick="return confirm('Удалить подраздел «<%= sg.title %>»?')">Удалить</button>
+                </div>
+              </form>
+            <% }) %>
+          </div>
+        </div>
+
+      <!-- ITEMS LIST -->
       <% } else if (currentTab === 'items') { %>
 
         <div class="page-header">
@@ -410,9 +403,7 @@
           </div>
         </div>
 
-      <!-- ═══════════════════════════════
-           ADD ITEM
-      ═══════════════════════════════ -->
+      <!-- ADD ITEM -->
       <% } else if (currentTab === 'add-item') { %>
 
         <div class="page-header">
@@ -501,11 +492,13 @@
                 <input class="form-input" name="promo_text" placeholder="Cola в подарок">
               </div>
               <div class="form-group form-group-sm">
-                <label class="form-label">Тип</label>
+                <label class="form-label">Тип / иконка</label>
                 <select class="form-input" name="promo_type">
-                  <option value="gift">Подарок</option>
-                  <option value="discount">Скидка</option>
-                  <option value="hot">Хит акция</option>
+                  <option value="cola">🥤 Кола</option>
+                  <option value="beer">🍺 Пиво</option>
+                  <option value="gift">🎁 Подарок</option>
+                  <option value="discount">💸 Скидка</option>
+                  <option value="hot">🔥 Хит акция</option>
                 </select>
               </div>
             </div>
@@ -515,9 +508,7 @@
           </div>
         </form>
 
-      <!-- ═══════════════════════════════
-           EDIT ITEM
-      ═══════════════════════════════ -->
+      <!-- EDIT ITEM -->
       <% } else if (currentTab === 'edit-item' && editItem) { %>
 
         <div class="page-header">
@@ -564,7 +555,7 @@
                 <label class="form-label">Описание</label>
                 <textarea class="form-input form-textarea" name="description" rows="3"><%= editItem.description %></textarea>
               </div>
-             <div class="form-group">
+              <div class="form-group">
                 <label class="form-label">Подраздел (необязательно)</label>
                 <select class="form-input" name="subgroup_id" id="subgroupSelect">
                   <option value="">— без подраздела —</option>
@@ -612,15 +603,17 @@
                 <input class="form-input" name="promo_text" value="<%= editItem.promo_text || '' %>" placeholder="Cola в подарок">
               </div>
               <div class="form-group form-group-sm">
-                <label class="form-label">Тип</label>
+                <label class="form-label">Тип / иконка</label>
                 <select class="form-input" name="promo_type">
-                  <option value="gift" <%= editItem.promo_type === 'gift' ? 'selected' : '' %>>Подарок</option>
-                  <option value="discount" <%= editItem.promo_type === 'discount' ? 'selected' : '' %>>Скидка</option>
-                  <option value="hot" <%= editItem.promo_type === 'hot' ? 'selected' : '' %>>Хит акция</option>
+                  <option value="cola"     <%= (editItem.promo_type || 'cola') === 'cola'     ? 'selected' : '' %>>🥤 Кола</option>
+                  <option value="beer"     <%= editItem.promo_type === 'beer'     ? 'selected' : '' %>>🍺 Пиво</option>
+                  <option value="gift"     <%= editItem.promo_type === 'gift'     ? 'selected' : '' %>>🎁 Подарок</option>
+                  <option value="discount" <%= editItem.promo_type === 'discount' ? 'selected' : '' %>>💸 Скидка</option>
+                  <option value="hot"      <%= editItem.promo_type === 'hot'      ? 'selected' : '' %>>🔥 Хит акция</option>
                 </select>
               </div>
             </div>
-            <div class="form-footer">
+            <div class="form-footer form-footer-between">
               <form method="post" action="/admin/items/<%= editItem.id %>/delete" style="margin:0"
                 onsubmit="return confirm('Удалить позицию «<%= editItem.title %>»?')">
                 <button class="btn btn-danger" type="submit">Удалить позицию</button>
@@ -648,44 +641,33 @@
       });
     }
 
-
     const allSubgroups = <%- JSON.stringify(subgroups || []) %>;
     const selectedSubgroupId = '<%= editItem ? (editItem.subgroup_id || '') : '' %>';
 
     function renderSubgroups() {
       const categorySelect = document.getElementById('categorySelect');
       const subgroupSelect = document.getElementById('subgroupSelect');
-
       if (!categorySelect || !subgroupSelect) return;
 
       const categoryId = String(categorySelect.value || '');
       subgroupSelect.innerHTML = '<option value="">— без подраздела —</option>';
 
       allSubgroups
-        .filter(function(sg) {
-          return String(sg.category_id) === categoryId;
-        })
+        .filter(function(sg) { return String(sg.category_id) === categoryId; })
         .forEach(function(sg) {
           const option = document.createElement('option');
           option.value = sg.id;
           option.textContent = sg.title;
-
-          if (String(sg.id) === String(selectedSubgroupId)) {
-            option.selected = true;
-          }
-
+          if (String(sg.id) === String(selectedSubgroupId)) option.selected = true;
           subgroupSelect.appendChild(option);
         });
     }
 
     document.addEventListener('DOMContentLoaded', function() {
       renderSubgroups();
-
       const categorySelect = document.getElementById('categorySelect');
       if (categorySelect) {
-        categorySelect.addEventListener('change', function() {
-          renderSubgroups();
-        });
+        categorySelect.addEventListener('change', renderSubgroups);
       }
     });
   </script>
