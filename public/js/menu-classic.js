@@ -126,3 +126,15 @@ lb.addEventListener(
   },
   { passive: true },
 );
+
+function selectVariant(cardId, btn) {
+  const picker = document.getElementById(cardId);
+  picker.querySelectorAll('.variant-btn').forEach((b) => b.classList.remove('active'));
+  btn.classList.add('active');
+  const priceEl = document.getElementById(cardId + '-price');
+  if (priceEl) {
+    const parts = priceEl.textContent.trim().split(' ');
+    const currency = parts[parts.length - 1];
+    priceEl.textContent = btn.dataset.price + ' ' + currency;
+  }
+}

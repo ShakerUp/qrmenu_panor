@@ -821,3 +821,23 @@ a {
   display: inline-block !important;
   flex: 0 0 16px !important;
 }
+.variant-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.variant-btn {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.variant-btn.active {
+  background: var(--accent);
+  color: #fff;
+}

@@ -57,12 +57,20 @@ CREATE TABLE IF NOT EXISTS items (
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS item_variants (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  item_id INTEGER NOT NULL,
+  label TEXT NOT NULL,
+  price REAL NOT NULL,
+  position INTEGER DEFAULT 0,
+  FOREIGN KEY(item_id) REFERENCES items(id) ON DELETE CASCADE
+);
 `);
 
 function addColumnIfNotExists(table, column, definition) {
   const columns = db.prepare(`PRAGMA table_info(${table})`).all();
   const exists = columns.some((c) => c.name === column);
-
   if (!exists) {
     db.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`).run();
   }
@@ -73,7 +81,6 @@ addColumnIfNotExists('items', 'promo_text', "TEXT DEFAULT ''");
 addColumnIfNotExists('items', 'promo_type', "TEXT DEFAULT 'gift'");
 addColumnIfNotExists('items', 'subtitle_group', "TEXT DEFAULT ''");
 addColumnIfNotExists('items', 'subtitle_group_position', 'INTEGER DEFAULT 0');
-
 addColumnIfNotExists('items', 'subgroup_id', 'INTEGER REFERENCES subgroups(id) ON DELETE SET NULL');
 
 // Перенос старых subgroup в новую таблицу
@@ -88,7 +95,6 @@ WHERE subtitle_group IS NOT NULL
   AND subtitle_group != '';
 `);
 
-// Связать блюда с subgroup
 db.exec(`
 UPDATE items
 SET subgroup_id = (

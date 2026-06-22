@@ -22,11 +22,10 @@
           const promoType = item.promo_type || 'gift';
           let promoIcon = '🎁';
           let promoIconIsImg = false;
-          if (promoType === 'cola') {
-            promoIconIsImg = true;
-          } else if (promoType === 'beer') promoIcon = '🍺';
+          if (promoType === 'cola') { promoIconIsImg = true; }
+          else if (promoType === 'beer')     promoIcon = '🍺';
           else if (promoType === 'discount') promoIcon = '💸';
-          else if (promoType === 'hot')  promoIcon = '🔥';
+          else if (promoType === 'hot')      promoIcon = '🔥';
         %>
         <% if (promoIconIsImg) { %>
           <img src="/public/static/pepsi.png" alt="Pepsi" class="promo-icon-img">
@@ -47,16 +46,13 @@
           const pt = item.promo_type || 'gift';
           let bi = '🎁';
           let biIsImg = false;
-          if (pt === 'cola') {
-            biIsImg = true;
-          } else if (pt === 'beer') bi = '🍺';
+          if (pt === 'cola') { biIsImg = true; }
+          else if (pt === 'beer')     bi = '🍺';
           else if (pt === 'discount') bi = '💸';
-          else if (pt === 'hot')  bi = '🔥';
+          else if (pt === 'hot')      bi = '🔥';
         %>
         <span class="classic-badge gold">
-          <% if (biIsImg) { %>
-            <img src="/img/pepsi.png" alt="Pepsi" class="promo-icon-img">
-          <% } else { %><%= bi %><% } %>
+          <% if (biIsImg) { %><img src="/public/static/pepsi.png" alt="Pepsi" class="promo-icon-img"><% } else { %><%= bi %><% } %>
           <%= item.promo_text %>
         </span>
       <% } %>
@@ -71,21 +67,53 @@
       <p class="classic-desc"><%= item.description %></p>
     <% } %>
 
-    <% if (item.weight) { %>
-      <div class="classic-weight"><%= item.weight %></div>
-    <% } %>
+    <%
+      /* Если у товара есть варианты — показываем переключатель,
+         иначе — обычный вес и цену */
+      const hasVariants = item.variants && item.variants.length > 0;
+    %>
 
-    <div class="classic-price-row">
-      <% if (item.old_price) { %>
-        <span class="classic-old-price"><%= item.old_price %> <%= settings.currency %></span>
-      <% } %>
-      <strong class="classic-price"><%= item.price %> <%= settings.currency %></strong>
-    </div>
-
-    <% if (item.old_price && Number(item.old_price) > Number(item.price)) { %>
-      <div class="saving-badge">
-        🏷️ Економія <%= Math.round(Number(item.old_price) - Number(item.price)) %> <%= settings.currency %>
+    <% if (hasVariants) { %>
+      <%
+        /* Уникальный id для изоляции карточек на странице */
+        const cardId = 'card-' + item.id;
+      %>
+      <div class="variant-picker" id="<%= cardId %>">
+        <% item.variants.forEach((v, vi) => { %>
+          <button
+            type="button"
+            class="variant-btn<%= vi === 0 ? ' active' : '' %>"
+            data-price="<%= v.price %>"
+            data-label="<%= v.label %>"
+            onclick="selectVariant('<%= cardId %>', this)"
+          ><%= v.label %></button>
+        <% }) %>
       </div>
+      <div class="classic-price-row">
+        <strong class="classic-price" id="<%= cardId %>-price">
+          <%= item.variants[0].price %> <%= settings.currency %>
+        </strong>
+      </div>
+
+    <% } else { %>
+
+      <% if (item.weight) { %>
+        <div class="classic-weight"><%= item.weight %></div>
+      <% } %>
+
+      <div class="classic-price-row">
+        <% if (item.old_price) { %>
+          <span class="classic-old-price"><%= item.old_price %> <%= settings.currency %></span>
+        <% } %>
+        <strong class="classic-price"><%= item.price %> <%= settings.currency %></strong>
+      </div>
+
+      <% if (item.old_price && Number(item.old_price) > Number(item.price)) { %>
+        <div class="saving-badge">
+          🏷️ Економія <%= Math.round(Number(item.old_price) - Number(item.price)) %> <%= settings.currency %>
+        </div>
+      <% } %>
+
     <% } %>
   </div>
 </article>
