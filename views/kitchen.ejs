@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title><%= settings.restaurant_name %> — кухня</title>
+
+  <link rel="stylesheet" href="/public/css/style-classic.css?v=<%= Date.now() %>">
+  <link rel="stylesheet" href="/public/css/kitchen.css?v=<%= Date.now() %>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+
+  <style>
+    :root { --accent: <%= settings.accent_color || '#b89b5e' %>; }
+  </style>
+</head>
+
+<body class="classic-body kitchen-body">
+  <div class="classic-page kitchen-page">
+
+    <header class="classic-hero kitchen-hero">
+      <div class="classic-logo"><%= settings.restaurant_name || 'LE CAFÉ' %></div>
+      <div class="classic-subtitle"><span></span> Сторінка кухні <span></span></div>
+    </header>
+
+    <div class="kitchen-search-wrap">
+      <input
+        id="kitchenSearch"
+        class="kitchen-search"
+        type="search"
+        placeholder="Поиск блюда, состава или технологички..."
+        autocomplete="off"
+        oninput="filterKitchenItems()"
+      >
+      <div class="kitchen-search-hint" id="kitchenCount"></div>
+    </div>
+
+    <nav class="classic-tabs" id="categoryTabs" aria-label="Разделы меню">
+      <% categories.forEach((cat, index) => { %>
+        <% if (cat.items.length) { %>
+          <a href="#cat-<%= cat.id %>" class="classic-tab <%= index === 0 ? 'active' : '' %>"><%= cat.title %></a>
+        <% } %>
+      <% }) %>
+    </nav>
+
+    <main class="classic-wrap kitchen-wrap" id="kitchenList">
+      <% categories.forEach(cat => { if (cat.items.length) { %>
+        <section class="classic-section kitchen-section" id="cat-<%= cat.id %>">
+          <div class="classic-section-head">
+            <h2><%= cat.title %></h2>
+            <% if (cat.description) { %><p><%= cat.description %></p><% } %>
+          </div>
+
+          <%
+            const currentSubgroups = subgroups.filter(sg => sg.category_id === cat.id);
+            const singles = cat.items.filter(i => !i.subgroup_id);
+            const groups = currentSubgroups.map(sg => ({
+              group: sg.title,
+              position: sg.position,
+              items: cat.items.filter(i => i.subgroup_id === sg.id)
+            })).filter(g => g.items.length).sort((a, b) => a.position - b.position);
+          %>
+
+          <% if (singles.length) { %>
+            <div class="classic-list kitchen-list">
+              <% singles.forEach(item => { %>
+                <%- include('_kitchen-card', { item, settings }) %>
+              <% }) %>
+            </div>
+          <% } %>
+
+          <% groups.forEach((grp, gi) => { %>
+            <div class="sub-group kitchen-sub-group" id="sg-<%= cat.id %>-<%= gi %>">
+              <button class="sub-group-toggle" aria-expanded="true" aria-controls="sgl-<%= cat.id %>-<%= gi %>" onclick="toggleGroup(this)">
+                <span class="sub-group-title"><%= grp.group %></span>
+                <svg class="sub-group-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="sub-group-list" id="sgl-<%= cat.id %>-<%= gi %>">
+                <div class="classic-list kitchen-list">
+                  <% grp.items.forEach(item => { %>
+                    <%- include('_kitchen-card', { item, settings }) %>
+                  <% }) %>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+
+        </section>
+      <% } }) %>
+    </main>
+
+    <footer class="classic-footer">Сторінка для кухні</footer>
+  </div>
+
+  <script src="/public/js/menu-classic.js?v=<%= Date.now() %>"></script>
+  <script>
+    function normalizeText(value) {
+      return String(value || '').toLowerCase().trim();
+    }
+
+    function filterKitchenItems() {
+      const q = normalizeText(document.getElementById('kitchenSearch').value);
+      const cards = document.querySelectorAll('.kitchen-card');
+      let visible = 0;
+
+      cards.forEach(function(card) {
+        const text = normalizeText(card.dataset.searchText || card.textContent);
+        const match = !q || text.includes(q);
+        card.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+
+      document.querySelectorAll('.kitchen-section').forEach(function(section) {
+        const hasVisible = !!section.querySelector('.kitchen-card:not([style*="display: none"])');
+        section.style.display = hasVisible ? '' : 'none';
+      });
+
+      document.querySelectorAll('.kitchen-sub-group').forEach(function(group) {
+        const hasVisible = !!group.querySelector('.kitchen-card:not([style*="display: none"])');
+        group.style.display = hasVisible ? '' : 'none';
+      });
+
+      const count = document.getElementById('kitchenCount');
+      count.textContent = q ? 'Найдено: ' + visible : '';
+    }
+
+    function toggleKitchenCard(btn) {
+      const card = btn.closest('.kitchen-card');
+      const isOpen = card.classList.toggle('open');
+      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      btn.querySelector('.kitchen-open-text').textContent = isOpen ? 'Свернуть' : 'Открыть технологичку';
+    }
+  </script>
+</body>
+</html>

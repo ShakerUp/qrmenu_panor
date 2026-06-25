@@ -144,6 +144,32 @@ app.get('/', (req, res) => {
 });
 
 /* =========================
+   KITCHEN / COOKS PAGE
+========================= */
+
+app.get('/kitchen', (req, res) => {
+  const s = settings();
+  const categories = db
+    .prepare('SELECT * FROM categories WHERE is_active = 1 ORDER BY position, id')
+    .all();
+  const items = db.prepare('SELECT * FROM items WHERE is_active = 1 ORDER BY position, id').all();
+  const subgroups = db.prepare('SELECT * FROM subgroups ORDER BY category_id, position, id').all();
+  const variants = db.prepare('SELECT * FROM item_variants ORDER BY item_id, position, id').all();
+
+  const grouped = categories.map((c) => ({
+    ...c,
+    items: items
+      .filter((i) => i.category_id === c.id)
+      .map((i) => ({
+        ...i,
+        variants: variants.filter((v) => v.item_id === i.id),
+      })),
+  }));
+
+  res.render('kitchen', { settings: s, categories: grouped, subgroups });
+});
+
+/* =========================
    AUTH
 ========================= */
 
@@ -344,6 +370,7 @@ app.post('/admin/items', upload.single('image'), async (req, res) => {
     promo_text,
     promo_type,
     subgroup_id,
+    tech_card,
   } = req.body;
 
   const result = db
@@ -351,9 +378,9 @@ app.post('/admin/items', upload.single('image'), async (req, res) => {
       `
     INSERT INTO items
       (category_id, title, description, price, old_price, weight, image,
-       badges, allergens, promo_label, promo_text, promo_type,
+       badges, allergens, promo_label, promo_text, promo_type, tech_card,
        is_popular, is_new, is_active, position, subgroup_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
     )
     .run(
@@ -369,6 +396,7 @@ app.post('/admin/items', upload.single('image'), async (req, res) => {
       promo_label || '',
       promo_text || '',
       promo_type || 'gift',
+      tech_card || '',
       is_popular ? 1 : 0,
       is_new ? 1 : 0,
       is_active ? 1 : 0,
@@ -403,6 +431,7 @@ app.post('/admin/items/:id', upload.single('image'), async (req, res) => {
     promo_text,
     promo_type,
     subgroup_id,
+    tech_card,
   } = req.body;
 
   db.prepare(
@@ -410,7 +439,7 @@ app.post('/admin/items/:id', upload.single('image'), async (req, res) => {
     UPDATE items SET
       category_id = ?, title = ?, description = ?, price = ?,
       old_price = ?, weight = ?, image = ?, badges = ?, allergens = ?,
-      promo_label = ?, promo_text = ?, promo_type = ?,
+      promo_label = ?, promo_text = ?, promo_type = ?, tech_card = ?,
       is_popular = ?, is_new = ?, is_active = ?, position = ?, subgroup_id = ?
     WHERE id = ?
   `,
@@ -427,6 +456,7 @@ app.post('/admin/items/:id', upload.single('image'), async (req, res) => {
     promo_label || '',
     promo_text || '',
     promo_type || 'gift',
+    tech_card || '',
     is_popular ? 1 : 0,
     is_new ? 1 : 0,
     is_active ? 1 : 0,

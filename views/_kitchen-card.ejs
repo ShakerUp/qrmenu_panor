@@ -1,0 +1,45 @@
+<article
+  class="classic-card kitchen-card"
+  data-search-text="<%= [item.title, item.description, item.weight, item.badges, item.allergens, item.tech_card].filter(Boolean).join(' ') %>"
+>
+  <button type="button" class="kitchen-card-head" onclick="toggleKitchenCard(this)" aria-expanded="false">
+    <div class="kitchen-card-thumb">
+      <% if (item.image) { %>
+        <img src="<%= item.image %>" alt="<%= item.title %>" loading="lazy" decoding="async">
+      <% } else { %>
+        <div class="classic-placeholder">🍽️</div>
+      <% } %>
+    </div>
+
+    <div class="kitchen-card-summary">
+      <div class="kitchen-title-row">
+        <h3><%= item.title %></h3>
+        <% if (item.weight) { %><span class="kitchen-weight"><%= item.weight %></span><% } %>
+      </div>
+      <% if (item.description) { %><p><%= item.description %></p><% } %>
+      <span class="kitchen-open-text">Открыть технологичку</span>
+    </div>
+  </button>
+
+  <div class="kitchen-card-full">
+    <% if (item.image) { %>
+      <img class="kitchen-full-img" src="<%= item.image %>" alt="<%= item.title %>">
+    <% } %>
+
+    <div class="kitchen-full-content">
+      <h4>Технологичка приготовления</h4>
+      <% if (item.tech_card) { %>
+        <div class="kitchen-tech-text"><%= item.tech_card %></div>
+      <% } else { %>
+        <div class="kitchen-empty">Технологичка пока не заполнена в админке.</div>
+      <% } %>
+
+      <% if (item.allergens) { %>
+        <div class="kitchen-extra"><strong>Аллергены:</strong> <%= item.allergens %></div>
+      <% } %>
+      <% if (item.badges) { %>
+        <div class="kitchen-extra"><strong>Метки:</strong> <%= item.badges %></div>
+      <% } %>
+    </div>
+  </div>
+</article>

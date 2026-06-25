@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS items (
   promo_label TEXT DEFAULT '',
   promo_text TEXT DEFAULT '',
   promo_type TEXT DEFAULT 'gift',
+  tech_card TEXT DEFAULT '',
   is_popular INTEGER DEFAULT 0,
   is_new INTEGER DEFAULT 0,
   is_active INTEGER DEFAULT 1,
@@ -79,9 +80,11 @@ function addColumnIfNotExists(table, column, definition) {
 addColumnIfNotExists('items', 'promo_label', "TEXT DEFAULT ''");
 addColumnIfNotExists('items', 'promo_text', "TEXT DEFAULT ''");
 addColumnIfNotExists('items', 'promo_type', "TEXT DEFAULT 'gift'");
+addColumnIfNotExists('items', 'tech_card', "TEXT DEFAULT ''");
 addColumnIfNotExists('items', 'subtitle_group', "TEXT DEFAULT ''");
 addColumnIfNotExists('items', 'subtitle_group_position', 'INTEGER DEFAULT 0');
 addColumnIfNotExists('items', 'subgroup_id', 'INTEGER REFERENCES subgroups(id) ON DELETE SET NULL');
+addColumnIfNotExists('items', 'tech_card', "TEXT DEFAULT ''");
 
 // Перенос старых subgroup в новую таблицу
 db.exec(`
