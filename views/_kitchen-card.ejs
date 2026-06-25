@@ -29,7 +29,7 @@
     <div class="kitchen-full-content">
       <h4>Технологичка приготовления</h4>
       <% if (item.tech_card) { %>
-        <div class="kitchen-tech-text"><%= item.tech_card %></div>
+        <div class="kitchen-tech-text"><%- item.tech_card || '<p>Технологичка пока не заполнена.</p>' %></div>
       <% } else { %>
         <div class="kitchen-empty">Технологичка пока не заполнена в админке.</div>
       <% } %>
