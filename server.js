@@ -6,6 +6,14 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
+const archiver = require('archiver');
+const unzipper = require('unzipper');
+let cron = null;
+try {
+  cron = require('node-cron');
+} catch (_) {
+  console.warn('node-cron не установлен: автоматические бэкапы отключены');
+}
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const db = require('./db');
@@ -35,7 +43,12 @@ const adminLimiter = rateLimit({
 });
 
 const uploadDir = path.join(__dirname, 'public/uploads');
+const backupsDir = path.join(__dirname, 'backups');
+const tempDir = path.join(__dirname, 'tmp');
+
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+if (!fs.existsSync(backupsDir)) fs.mkdirSync(backupsDir, { recursive: true });
+if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
 const allowedExt = ['.jpg', '.jpeg', '.png', '.webp'];
 
@@ -55,6 +68,24 @@ const upload = multer({
     if (!allowedExt.includes(ext)) return cb(new Error('Разрешены только JPG, PNG и WEBP'));
     if (!file.mimetype.startsWith('image/') || file.mimetype === 'image/svg+xml')
       return cb(new Error('Разрешены только безопасные изображения'));
+    cb(null, true);
+  },
+});
+
+const backupStorage = multer.diskStorage({
+  destination: (_, __, cb) => cb(null, tempDir),
+  filename: (_, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    cb(null, `uploaded-backup-${Date.now()}${ext}`);
+  },
+});
+
+const backupUpload = multer({
+  storage: backupStorage,
+  limits: { fileSize: 300 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if (ext !== '.zip') return cb(new Error('Можно загрузить только ZIP-архив резервной копии'));
     cb(null, true);
   },
 });
@@ -115,6 +146,130 @@ async function optimizeImage(file) {
     .toFile(outputPath);
   fs.unlinkSync(inputPath);
   return `/public/uploads/${outputName}`;
+}
+
+function safeBackupName(fileName) {
+  const clean = path.basename(fileName || '');
+  if (!clean.endsWith('.zip')) return null;
+  return clean;
+}
+
+function listBackups() {
+  if (!fs.existsSync(backupsDir)) fs.mkdirSync(backupsDir, { recursive: true });
+  return fs
+    .readdirSync(backupsDir)
+    .filter((name) => name.endsWith('.zip'))
+    .map((name) => {
+      const fullPath = path.join(backupsDir, name);
+      const stat = fs.statSync(fullPath);
+      return {
+        name,
+        size: stat.size,
+        sizeMb: (stat.size / 1024 / 1024).toFixed(2),
+        createdAt: stat.mtime,
+        createdLabel: stat.mtime.toLocaleString('ru-RU'),
+      };
+    })
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+function pruneOldBackups(keep = 30) {
+  const backups = listBackups();
+  backups.slice(keep).forEach((backup) => {
+    try {
+      fs.unlinkSync(path.join(backupsDir, backup.name));
+    } catch (err) {
+      console.warn('Не удалось удалить старый backup:', backup.name, err.message);
+    }
+  });
+}
+
+function checkpointDatabase() {
+  try {
+    db.pragma('wal_checkpoint(TRUNCATE)');
+  } catch (err) {
+    console.warn('Не удалось выполнить WAL checkpoint:', err.message);
+  }
+}
+
+function makeBackupFileName(prefix = 'backup') {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  return `${prefix}_${stamp}.zip`;
+}
+
+function createBackupArchive(fileName) {
+  return new Promise((resolve, reject) => {
+    checkpointDatabase();
+
+    const cleanName = safeBackupName(fileName) || makeBackupFileName();
+    const outputPath = path.join(backupsDir, cleanName);
+    const output = fs.createWriteStream(outputPath);
+    const archive = archiver('zip', {
+      zlib: { level: 9 },
+    });
+
+    output.on('close', () => resolve({ fileName: cleanName, outputPath }));
+    archive.on('error', reject);
+
+    archive.pipe(output);
+
+    const dbPath = path.join(__dirname, 'menu.db');
+    if (fs.existsSync(dbPath)) archive.file(dbPath, { name: 'menu.db' });
+    if (fs.existsSync(uploadDir)) archive.directory(uploadDir, 'uploads');
+
+    archive.append(
+      JSON.stringify(
+        {
+          created_at: new Date().toISOString(),
+          app: 'qrmenu',
+          restaurant: settings().restaurant_name || '',
+          contains: ['menu.db', 'uploads'],
+        },
+        null,
+        2,
+      ),
+      { name: 'backup.json' },
+    );
+
+    archive.finalize();
+  });
+}
+
+async function extractBackup(zipPath) {
+  const extractDir = path.join(tempDir, `restore-${Date.now()}`);
+  fs.mkdirSync(extractDir, { recursive: true });
+  await fs
+    .createReadStream(zipPath)
+    .pipe(unzipper.Extract({ path: extractDir }))
+    .promise();
+  return extractDir;
+}
+
+function restoreFromExtractedBackup(extractDir) {
+  const extractedDb = path.join(extractDir, 'menu.db');
+  const extractedUploads = path.join(extractDir, 'uploads');
+  const activeDbPath = path.join(__dirname, 'menu.db');
+
+  if (!fs.existsSync(extractedDb)) {
+    throw new Error('В архиве не найден menu.db. Это не похоже на резервную копию сайта.');
+  }
+
+  checkpointDatabase();
+
+  const beforeRestoreName = `before_restore_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.db`;
+  if (fs.existsSync(activeDbPath)) {
+    fs.copyFileSync(activeDbPath, path.join(backupsDir, beforeRestoreName));
+  }
+
+  db.close();
+
+  fs.copyFileSync(extractedDb, activeDbPath);
+
+  if (fs.existsSync(extractedUploads)) {
+    fs.rmSync(uploadDir, { recursive: true, force: true });
+    fs.mkdirSync(uploadDir, { recursive: true });
+    fs.cpSync(extractedUploads, uploadDir, { recursive: true });
+  }
 }
 
 /* =========================
@@ -227,11 +382,14 @@ app.get('/admin', (req, res) => {
       .all(req.query.id);
   }
 
+  const backups = tab === 'backups' ? listBackups() : [];
+
   res.render('admin', {
     settings: s,
     categories,
     subgroups,
     items,
+    backups,
     currentTab: tab,
     editItem,
     editVariants,
@@ -478,6 +636,102 @@ app.post('/admin/items/:id/delete', (req, res) => {
 });
 
 /* =========================
+   BACKUPS
+========================= */
+
+app.post('/admin/backups/create', async (req, res, next) => {
+  try {
+    const backup = await createBackupArchive(makeBackupFileName('backup'));
+    req.flash('success', `Резервная копия создана: ${backup.fileName}`);
+    res.redirect('/admin?tab=backups');
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/admin/backups/:file/download', (req, res, next) => {
+  try {
+    const fileName = safeBackupName(req.params.file);
+    if (!fileName) throw new Error('Некорректное имя файла');
+    const filePath = path.join(backupsDir, fileName);
+    if (!fs.existsSync(filePath)) throw new Error('Резервная копия не найдена');
+    res.download(filePath, fileName);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/admin/backups/:file/delete', (req, res, next) => {
+  try {
+    const fileName = safeBackupName(req.params.file);
+    if (!fileName) throw new Error('Некорректное имя файла');
+    const filePath = path.join(backupsDir, fileName);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    req.flash('success', 'Резервная копия удалена');
+    res.redirect('/admin?tab=backups');
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/admin/backups/upload', backupUpload.single('backup_zip'), async (req, res, next) => {
+  try {
+    if (!req.file) throw new Error('Файл не загружен');
+
+    const originalBase = path.basename(req.file.originalname || 'uploaded.zip', '.zip');
+    const safeBase =
+      originalBase.replace(/[^a-zA-Z0-9а-яА-ЯёЁ._-]/g, '_').slice(0, 80) || 'uploaded_backup';
+    const fileName = `${safeBase}_${Date.now()}.zip`;
+    const finalPath = path.join(backupsDir, fileName);
+    fs.copyFileSync(req.file.path, finalPath);
+    fs.unlinkSync(req.file.path);
+
+    if (req.body.action === 'restore') {
+      const extractDir = await extractBackup(finalPath);
+      restoreFromExtractedBackup(extractDir);
+      res.send(`
+        <meta charset="utf-8">
+        <style>body{font-family:Arial,sans-serif;padding:30px;line-height:1.5}</style>
+        <h2>Резервная копия загружена и восстановлена</h2>
+        <p>Сервер сейчас будет остановлен для перезапуска с новой базой.</p>
+        <p>Если у тебя PM2 — он поднимет сайт сам. Локально запусти <code>node server.js</code> заново.</p>
+      `);
+      return setTimeout(() => process.exit(0), 800);
+    }
+
+    req.flash('success', `Резервная копия загружена: ${fileName}`);
+    res.redirect('/admin?tab=backups');
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/admin/backups/:file/restore', async (req, res, next) => {
+  try {
+    const fileName = safeBackupName(req.params.file);
+    if (!fileName) throw new Error('Некорректное имя файла');
+    const filePath = path.join(backupsDir, fileName);
+    if (!fs.existsSync(filePath)) throw new Error('Резервная копия не найдена');
+
+    const extractDir = await extractBackup(filePath);
+    restoreFromExtractedBackup(extractDir);
+
+    res.send(`
+      <meta charset="utf-8">
+      <style>body{font-family:Arial,sans-serif;padding:30px;line-height:1.5}</style>
+      <h2>Резервная копия восстановлена</h2>
+      <p>Активная база <code>menu.db</code> и папка <code>public/uploads</code> заменены.</p>
+      <p>Сервер сейчас будет остановлен для перезапуска с новой базой.</p>
+      <p>Если у тебя PM2 — он поднимет сайт сам. Локально запусти <code>node server.js</code> заново.</p>
+    `);
+
+    setTimeout(() => process.exit(0), 800);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* =========================
    ERROR HANDLER
 ========================= */
 
@@ -493,6 +747,29 @@ app.use((err, req, res, next) => {
   }
   res.status(500).send('Server error');
 });
+
+/* =========================
+   AUTO BACKUPS
+========================= */
+
+if (cron) {
+  const autoBackupCron = process.env.BACKUP_CRON || '0 3 * * *';
+  const autoBackupKeep = Number(process.env.BACKUP_KEEP || 30);
+
+  cron.schedule(
+    autoBackupCron,
+    async () => {
+      try {
+        const backup = await createBackupArchive(makeBackupFileName('auto_backup'));
+        pruneOldBackups(autoBackupKeep);
+        console.log(`Auto backup created: ${backup.fileName}`);
+      } catch (err) {
+        console.error('Auto backup failed:', err);
+      }
+    },
+    { timezone: process.env.BACKUP_TIMEZONE || 'Europe/Kyiv' },
+  );
+}
 
 /* =========================
    START SERVER

@@ -84,7 +84,6 @@ addColumnIfNotExists('items', 'tech_card', "TEXT DEFAULT ''");
 addColumnIfNotExists('items', 'subtitle_group', "TEXT DEFAULT ''");
 addColumnIfNotExists('items', 'subtitle_group_position', 'INTEGER DEFAULT 0');
 addColumnIfNotExists('items', 'subgroup_id', 'INTEGER REFERENCES subgroups(id) ON DELETE SET NULL');
-addColumnIfNotExists('items', 'tech_card', "TEXT DEFAULT ''");
 
 // Перенос старых subgroup в новую таблицу
 db.exec(`

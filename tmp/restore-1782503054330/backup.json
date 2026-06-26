@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-06-26T19:43:00.971Z",
+  "app": "qrmenu",
+  "restaurant": "My Restaurant",
+  "contains": [
+    "menu.db",
+    "uploads"
+  ]
+}
