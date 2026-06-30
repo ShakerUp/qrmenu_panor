@@ -35,6 +35,14 @@ const loginLimiter = rateLimit({
   message: 'Слишком много попыток входа. Попробуйте позже.',
 });
 
+const kitchenLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Слишком много попыток входа. Попробуйте позже.',
+});
+
 const adminLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 120,
@@ -125,6 +133,11 @@ function settings() {
 
 function requireAdmin(req, res, next) {
   if (!req.session.adminId) return res.redirect('/admin/login');
+  next();
+}
+
+function requireKitchen(req, res, next) {
+  if (!req.session.kitchenAuth) return res.redirect('/kitchen/login');
   next();
 }
 
@@ -299,10 +312,52 @@ app.get('/', (req, res) => {
 });
 
 /* =========================
+   KITCHEN AUTH
+========================= */
+
+app.get('/kitchen/login', (req, res) => res.render('kitchen-login'));
+
+app.post('/kitchen/login', kitchenLoginLimiter, (req, res) => {
+  const { password } = req.body;
+  const kitchenPassword = process.env.KITCHEN_PASSWORD || '';
+
+  if (!kitchenPassword) {
+    req.flash('error', 'KITCHEN_PASSWORD не настроен в .env');
+    return res.redirect('/kitchen/login');
+  }
+
+  // Сравнение константного времени — защита от timing-атак
+  const crypto = require('crypto');
+  const a = Buffer.from(String(password || ''));
+  const b = Buffer.from(String(kitchenPassword));
+  const isValid = a.length === b.length && crypto.timingSafeEqual(a, b);
+
+  if (!isValid) {
+    req.flash('error', 'Неверный пароль');
+    return res.redirect('/kitchen/login');
+  }
+
+  // Пересоздаём сессию при логине — защита от session fixation
+  req.session.regenerate((err) => {
+    if (err) {
+      req.flash('error', 'Ошибка входа, попробуйте ещё раз');
+      return res.redirect('/kitchen/login');
+    }
+    req.session.kitchenAuth = true;
+    res.redirect('/kitchen');
+  });
+});
+
+app.post('/kitchen/logout', (req, res) => {
+  req.session.kitchenAuth = false;
+  res.redirect('/kitchen/login');
+});
+
+/* =========================
    KITCHEN / COOKS PAGE
 ========================= */
 
-app.get('/kitchen', (req, res) => {
+app.get('/kitchen', requireKitchen, (req, res) => {
   const s = settings();
   const categories = db
     .prepare('SELECT * FROM categories WHERE is_active = 1 ORDER BY position, id')
@@ -325,7 +380,7 @@ app.get('/kitchen', (req, res) => {
 });
 
 /* =========================
-   AUTH
+   AUTH (ADMIN)
 ========================= */
 
 app.get('/admin/login', (req, res) => res.render('login'));
@@ -485,11 +540,9 @@ app.post('/admin/subgroups/:id/delete', (req, res) => {
    ITEMS
 ========================= */
 
-// Вспомогательная функция — сохраняет варианты из тела запроса
 function saveVariants(itemId, body) {
   db.prepare('DELETE FROM item_variants WHERE item_id = ?').run(itemId);
 
-  // variant_label[] и variant_price[] приходят как массивы
   const labels = [].concat(body.variant_label || []);
   const prices = [].concat(body.variant_price || []);
   const positions = [].concat(body.variant_position || []);

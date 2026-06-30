@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вход на кухню</title>
+  <link rel="stylesheet" href="/public/css/style.css">
+</head>
+<body class="admin-body login-body">
+  <form class="login-card" method="post" action="/kitchen/login">
+    <div class="eyebrow">KITCHEN</div>
+    <h1>Вход для поваров</h1>
+    <% if (flash.error) { %><div class="alert error"><%= flash.error[0] %></div><% } %>
+    <label>Пароль <input name="password" type="password" required autocomplete="current-password" autofocus></label>
+    <button class="btn primary">Войти</button>
+  </form>
+</body>
+</html>
